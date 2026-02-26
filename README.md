@@ -4,385 +4,523 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="google" content="notranslate">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>성적 통합 분석 시스템 v1.7</title>
+    <title>성적 통합 분석 시스템 - 단일 파일 버전</title>
     
-    <!-- 라이브러리 로드 -->
+    <!-- 필수 라이브러리 로드 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;700&display=swap');
-        body { font-family: 'Pretendard', sans-serif; background-color: #f1f5f9; color: #334155; margin: 0; padding: 0; word-break: keep-all; }
-        .card { background: white; border-radius: 1.5rem; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); padding: 2rem; border: 1px solid rgba(226, 232, 240, 0.8); }
-        .btn-indigo { background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%); color: white; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-        .btn-indigo:hover { transform: translateY(-2px); box-shadow: 0 20px 25px -5px rgba(79, 70, 229, 0.2); }
-        .modal { display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(8px); }
-        .grade-badge { padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 700; }
+        @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;700;900&display=swap');
+        body { font-family: 'Pretendard', sans-serif; background-color: #f8fafc; color: #334155; }
+        .card { background: white; border-radius: 1.5rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); padding: 2rem; border: 1px solid #e2e8f0; }
+        .btn-primary { background: #4f46e5; color: white; transition: all 0.2s; }
+        .btn-primary:hover { background: #4338ca; transform: translateY(-1px); box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.3); }
+        .modal { display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); z-index: 50; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
         
         @media print {
             .no-print { display: none !important; }
-            body { background: white; padding: 0; }
-            .card { box-shadow: none !important; border: 1px solid #eee !important; page-break-inside: avoid; margin-bottom: 2rem; }
-            .print-full { width: 100% !important; grid-column: span 12 / span 12 !important; }
+            body { background: white; }
+            .card { box-shadow: none; border: 1px solid #eee; margin-bottom: 2rem; page-break-inside: avoid; }
+            .print-full-width { grid-column: span 12 / span 12 !important; }
         }
-
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
     </style>
 </head>
-<body class="p-4 md:p-10">
+<body class="p-4 md:p-8">
     <div class="max-w-6xl mx-auto">
-        <!-- 상단 헤더 -->
-        <header class="mb-12 flex flex-col md:flex-row justify-between items-end gap-6">
+        <!-- 헤더 -->
+        <header class="mb-10 flex flex-col md:flex-row justify-between items-start md:items-end gap-4 border-b border-slate-200 pb-6">
             <div>
-                <div class="flex items-center gap-3 mb-2">
-                    <span class="bg-indigo-600 text-white text-[10px] font-black px-2 py-1 rounded-md uppercase tracking-widest">GitHub Pages Ver.</span>
-                    <h1 class="text-4xl font-black text-slate-900 tracking-tighter">성적 통합 분석 시스템</h1>
-                </div>
-                <p class="text-slate-500 font-medium italic">평가항목 실시간 연동 및 반별 분포 분석</p>
+                <span class="inline-block bg-emerald-100 text-emerald-700 text-xs font-bold px-2 py-1 rounded mb-2">GitHub Pages 완벽 호환</span>
+                <h1 class="text-3xl font-black text-slate-900 tracking-tight">성적 통합 분석 시스템</h1>
+                <p class="text-slate-500 mt-1">서버 없이 브라우저에서 100% 안전하게 구동됩니다.</p>
             </div>
-            <div class="flex gap-3 no-print">
-                <button id="btn-pdf" onclick="window.print()" class="hidden px-5 py-2.5 bg-white border border-slate-200 rounded-2xl text-sm font-bold text-slate-700 hover:bg-slate-50 flex items-center gap-2 shadow-sm transition-all">
-                    💾 리포트 출력
-                </button>
-                <div class="flex bg-slate-200/50 p-1.5 rounded-2xl border border-slate-200 shadow-inner">
-                    <button onclick="setMode('single')" id="btn-mode-single" class="px-6 py-2 rounded-xl text-sm font-extrabold transition-all">고사별</button>
-                    <button onclick="setMode('semester')" id="btn-mode-semester" class="px-6 py-2 rounded-xl text-sm font-extrabold transition-all">학기말</button>
-                </div>
+            <div class="flex gap-2 no-print">
+                <button onclick="window.print()" id="btn-print" class="hidden px-4 py-2 bg-white border border-slate-300 rounded-lg text-sm font-bold shadow-sm hover:bg-slate-50">🖨️ PDF 리포트</button>
             </div>
         </header>
 
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            <!-- 설정 패널 -->
+            <!-- 왼쪽: 설정 패널 -->
             <div class="lg:col-span-4 space-y-6 no-print">
-                <div class="card bg-white/80 backdrop-blur-md border-indigo-100">
-                    <h3 class="text-xs font-black text-indigo-500 uppercase tracking-widest mb-6 flex items-center gap-2">
-                        <span class="w-2 h-2 bg-indigo-500 rounded-full animate-pulse"></span> Analysis Settings
-                    </h3>
+                <div class="card">
+                    <h3 class="font-bold text-lg mb-4 flex items-center gap-2">⚙️ 분석 설정</h3>
                     
-                    <div class="space-y-5">
+                    <div class="space-y-6">
+                        <!-- 모드 선택 -->
                         <div>
-                            <label class="block text-xs font-bold text-slate-400 mb-2 ml-1">등급 산출 체계</label>
-                            <select id="gradeSystem" class="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
+                            <label class="block text-sm font-bold text-slate-700 mb-2">분석 모드</label>
+                            <div class="flex gap-2 bg-slate-100 p-1 rounded-lg">
+                                <button onclick="setMode('single')" id="mode-single" class="flex-1 py-2 text-sm font-bold bg-white rounded shadow-sm text-indigo-600">단일 고사</button>
+                                <button onclick="setMode('semester')" id="mode-semester" class="flex-1 py-2 text-sm font-bold rounded text-slate-500 hover:text-slate-700">학기말 통합</button>
+                            </div>
+                        </div>
+
+                        <!-- 등급제 선택 -->
+                        <div>
+                            <label class="block text-sm font-bold text-slate-700 mb-2">등급 산출 체계</label>
+                            <select id="gradeSystem" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg font-bold text-sm outline-none focus:border-indigo-500">
+                                <option value="9">상대평가 9등급제 (수능형)</option>
                                 <option value="5">상대평가 5등급제 (2025 개정)</option>
-                                <option value="9">상대평가 9등급제 (기존/수능)</option>
                             </select>
                         </div>
 
-                        <div id="semester-settings" class="hidden space-y-4 p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100">
-                            <div class="flex justify-between items-center mb-2">
-                                <p class="text-[11px] font-black text-indigo-600 uppercase">평가 항목 및 비율 (%)</p>
-                                <button onclick="addEvalItem()" class="text-[10px] bg-indigo-600 text-white px-2 py-1 rounded-md font-bold hover:bg-indigo-700">+ 추가</button>
+                        <!-- 학기말 통합 설정 영역 -->
+                        <div id="semester-settings" class="hidden space-y-3 p-4 bg-indigo-50/50 rounded-lg border border-indigo-100">
+                            <div class="flex justify-between items-center">
+                                <label class="text-sm font-bold text-indigo-800">평가 항목 및 비율</label>
+                                <button onclick="addEvalItem()" class="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded font-bold hover:bg-indigo-200">+ 추가</button>
                             </div>
-                            <div id="eval-rows-container" class="space-y-2"></div>
-                            <div id="weight-check-box" class="p-2 rounded-lg text-center bg-white/50 border border-indigo-100">
-                                <p id="weight-check" class="text-[10px] font-bold text-indigo-600"></p>
-                            </div>
+                            <div id="eval-rows" class="space-y-2"></div>
+                            <p id="weight-check" class="text-xs font-bold text-center mt-2"></p>
                         </div>
 
+                        <!-- 파일 업로드 영역 -->
                         <div>
-                            <label class="block text-xs font-bold text-slate-400 mb-2 ml-1">파일 업로드</label>
-                            <div id="file-inputs-list" class="space-y-3"></div>
+                            <div class="flex justify-between items-end mb-2">
+                                <label class="block text-sm font-bold text-slate-700">엑셀 데이터 업로드</label>
+                                <span class="text-[10px] text-slate-400">1열: 번호 / 그 외 열: 점수</span>
+                            </div>
+                            <div id="file-inputs" class="space-y-3"></div>
                         </div>
 
-                        <button onclick="runAnalysis()" class="w-full btn-indigo py-5 rounded-2xl font-black text-lg shadow-lg shadow-indigo-200 mt-6 active:scale-95">
-                            통합 분석 시작
+                        <button onclick="executeAnalysis()" class="w-full btn-primary py-4 rounded-xl font-bold text-lg shadow-md">
+                            분석 실행하기
                         </button>
                     </div>
                 </div>
             </div>
 
-            <!-- 분석 리포트 -->
-            <div class="lg:col-span-8 space-y-8 print-full">
-                <div id="stats-dashboard" class="hidden grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div class="card bg-slate-900 border-none text-white overflow-hidden relative">
-                        <div class="relative z-10">
-                            <p class="text-xs font-bold opacity-50 mb-1">전체 평균</p>
-                            <p id="stat-avg" class="text-4xl font-black tracking-tight">0.00</p>
-                        </div>
-                        <div class="absolute -right-4 -bottom-4 w-24 h-24 bg-indigo-500/20 rounded-full blur-2xl"></div>
+            <!-- 오른쪽: 결과 리포트 -->
+            <div class="lg:col-span-8 space-y-6 print-full-width">
+                <!-- 요약 통계 -->
+                <div id="result-summary" class="hidden grid grid-cols-3 gap-4">
+                    <div class="card bg-slate-800 text-white text-center p-6 border-none">
+                        <p class="text-sm font-medium text-slate-400 mb-1">전체 평균</p>
+                        <p id="res-avg" class="text-4xl font-black">0.00</p>
                     </div>
-                    <div class="card text-center border-b-4 border-b-indigo-500">
-                        <p class="text-xs font-bold text-slate-400 mb-1">총 인원</p>
-                        <p id="stat-total" class="text-4xl font-black text-slate-800">0</p>
+                    <div class="card text-center p-6">
+                        <p class="text-sm font-medium text-slate-500 mb-1">총 응시 인원</p>
+                        <p id="res-total" class="text-4xl font-black text-slate-800">0</p>
                     </div>
-                    <div class="card text-center">
-                        <p class="text-xs font-bold text-slate-400 mb-1">표준 편차</p>
-                        <p id="stat-std" class="text-4xl font-black text-slate-800">0.00</p>
+                    <div class="card text-center p-6">
+                        <p class="text-sm font-medium text-slate-500 mb-1">표준 편차</p>
+                        <p id="res-std" class="text-4xl font-black text-slate-800">0.00</p>
                     </div>
                 </div>
 
-                <div id="result-table-card" class="card hidden">
-                    <h3 class="font-black text-xl text-slate-900 mb-6">📊 등급 산출 결과</h3>
-                    <div class="overflow-x-auto rounded-2xl border border-slate-100 text-center">
-                        <table class="w-full text-sm">
-                            <thead>
-                                <tr class="bg-slate-50 text-slate-400 text-[10px] uppercase font-black">
-                                    <th class="p-5">등급</th>
-                                    <th class="p-5">누적 비율</th>
-                                    <th class="p-5">누적 인원</th>
-                                    <th class="p-5">등급 컷</th>
-                                    <th class="p-5 no-print">상세</th>
+                <!-- 등급 컷 테이블 -->
+                <div id="result-table" class="card hidden p-0 overflow-hidden">
+                    <div class="p-6 border-b border-slate-100">
+                        <h3 class="font-bold text-lg text-slate-800">📊 등급 산출 결과</h3>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-center">
+                            <thead class="bg-slate-50 text-slate-500 text-xs uppercase font-bold">
+                                <tr>
+                                    <th class="py-4">등급</th>
+                                    <th class="py-4">기준 비율</th>
+                                    <th class="py-4">누적 인원</th>
+                                    <th class="py-4">예상 등급 컷</th>
+                                    <th class="py-4 no-print">명단 확인</th>
                                 </tr>
                             </thead>
-                            <tbody id="grade-table-body" class="font-bold divide-y divide-slate-50"></tbody>
+                            <tbody id="grade-tbody" class="divide-y divide-slate-100 text-sm"></tbody>
                         </table>
                     </div>
                 </div>
 
-                <!-- 점수 급간별 분포 그래프 (드롭다운 포함) -->
-                <div id="bar-chart-card" class="card hidden">
-                    <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
-                        <h3 class="font-black text-slate-800 text-lg flex items-center gap-2">📈 점수 급간별 분포</h3>
-                        <div class="no-print">
-                            <select id="bar-scope-select" onchange="updateBarChart()" class="p-2.5 bg-slate-50 border border-slate-100 rounded-xl font-bold text-xs outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
-                                <option value="all">전체 분포</option>
-                            </select>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- 점수 분포 차트 -->
+                    <div id="chart-bar" class="card hidden p-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="font-bold text-slate-800">📈 점수 분포</h3>
+                            <select id="sel-bar" onchange="drawBarChart()" class="no-print p-1 bg-slate-50 border rounded text-xs font-bold"></select>
                         </div>
+                        <div class="h-64"><canvas id="canvasBar"></canvas></div>
                     </div>
-                    <div class="w-full h-[300px]"><canvas id="barChart"></canvas></div>
-                </div>
 
-                <div id="chart-card" class="card hidden">
-                    <div class="flex flex-col items-center">
-                        <div class="w-full flex justify-between items-center mb-10 no-print">
-                            <h3 class="font-black text-slate-800 text-lg">🍕 반별 등급 비율</h3>
-                            <select id="pie-class-select" onchange="updatePieChart()" class="p-2.5 bg-slate-50 border border-slate-100 rounded-xl font-bold text-xs outline-none focus:ring-2 focus:ring-indigo-500 transition-all"></select>
+                    <!-- 등급 비율 차트 -->
+                    <div id="chart-pie" class="card hidden p-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="font-bold text-slate-800">🍩 반별 등급 비율</h3>
+                            <select id="sel-pie" onchange="drawPieChart()" class="no-print p-1 bg-slate-50 border rounded text-xs font-bold"></select>
                         </div>
-                        <div class="w-full h-[350px]"><canvas id="pieChart"></canvas></div>
+                        <div class="h-64"><canvas id="canvasPie"></canvas></div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- 명단 확인 모달 -->
-    <div id="listModal" class="modal no-print" onclick="closeModal()">
-        <div class="bg-white rounded-[2.5rem] p-10 max-w-xl w-full m-4 shadow-2xl overflow-hidden flex flex-col max-h-[85vh]" onclick="event.stopPropagation()">
-            <div class="flex justify-between items-start mb-8">
+    <!-- 명단 모달 -->
+    <div id="modal" class="modal" onclick="closeModal()">
+        <div class="bg-white rounded-2xl w-full max-w-lg m-4 shadow-xl flex flex-col max-h-[80vh]" onclick="event.stopPropagation()">
+            <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-2xl">
                 <div>
-                    <h4 id="modalTitle" class="text-3xl font-black text-slate-900 mb-1"></h4>
-                    <p id="modalSub" class="text-sm font-bold text-indigo-500"></p>
+                    <h4 id="modal-title" class="text-xl font-black text-slate-900"></h4>
+                    <p id="modal-desc" class="text-sm font-bold text-indigo-600 mt-1"></p>
                 </div>
-                <button onclick="closeModal()" class="w-10 h-10 flex items-center justify-center bg-slate-50 rounded-full text-slate-400">✕</button>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 font-bold text-xl px-2">&times;</button>
             </div>
-            <div id="modalContent" class="overflow-y-auto space-y-3 flex-grow pr-4 custom-scrollbar"></div>
+            <div id="modal-list" class="p-6 overflow-y-auto space-y-2"></div>
         </div>
     </div>
 
     <script>
+        // 전역 상태 변수
         let currentMode = 'single';
-        let evalItems = [{ name: '1회고사', weight: 30 }, { name: '2회고사', weight: 30 }, { name: '수행평가', weight: 40 }];
-        let masterData = {};
-        let gradeBoundaries = [];
-        let charts = { pie: null, bar: null };
-        const COLORS = ['#4f46e5', '#6366f1', '#8b5cf6', '#a855f7', '#d946ef', '#ec4899', '#f43f5e', '#f97316', '#eab308'];
+        let evalList = [{ name: '중간고사', weight: 40 }, { name: '기말고사', weight: 40 }, { name: '수행평가', weight: 20 }];
+        let parsedData = {}; // { "1": [{num:1, score:100}, ...], "2": ... }
+        let currentCuts = [];
+        let chartInstances = { bar: null, pie: null };
 
+        // 1. UI 및 모드 제어
         function setMode(mode) {
             currentMode = mode;
-            document.getElementById('btn-mode-single').className = mode === 'single' ? 'px-6 py-2 rounded-xl text-sm font-black bg-white text-indigo-600 shadow-sm border border-slate-200' : 'px-6 py-2 rounded-xl text-sm font-bold text-slate-400 hover:text-slate-600';
-            document.getElementById('btn-mode-semester').className = mode === 'semester' ? 'px-6 py-2 rounded-xl text-sm font-black bg-white text-indigo-600 shadow-sm border border-slate-200' : 'px-6 py-2 rounded-xl text-sm font-bold text-slate-400 hover:text-slate-600';
-            document.getElementById('semester-settings').classList.toggle('hidden', mode === 'single');
-            refreshUI();
+            document.getElementById('mode-single').className = mode === 'single' ? 'flex-1 py-2 text-sm font-bold bg-white rounded shadow-sm text-indigo-600' : 'flex-1 py-2 text-sm font-bold rounded text-slate-500 hover:text-slate-700';
+            document.getElementById('mode-semester').className = mode === 'semester' ? 'flex-1 py-2 text-sm font-bold bg-white rounded shadow-sm text-indigo-600' : 'flex-1 py-2 text-sm font-bold rounded text-slate-500 hover:text-slate-700';
+            document.getElementById('semester-settings').style.display = mode === 'single' ? 'none' : 'block';
+            renderSettingsUI();
         }
 
-        function addEvalItem() {
-            evalItems.push({ name: '신규 평가', weight: 0 });
-            refreshUI();
-        }
-
-        function removeEvalItem(index) {
-            if (evalItems.length <= 1) return;
-            evalItems.splice(index, 1);
-            refreshUI();
-        }
-
-        function updateItemName(index, name) {
-            evalItems[index].name = name;
-            const labelEl = document.getElementById(`label-file-${index}`);
-            if (labelEl) labelEl.innerText = `${name || '평가'} (${evalItems[index].weight}%)`;
-        }
-
-        function updateItemWeight(index, weight) {
-            evalItems[index].weight = parseFloat(weight) || 0;
-            const labelEl = document.getElementById(`label-file-${index}`);
-            if (labelEl) labelEl.innerText = `${evalItems[index].name || '평가'} (${evalItems[index].weight}%)`;
-            updateWeightCheck();
-        }
-
-        function refreshUI() {
-            const container = document.getElementById('eval-rows-container');
-            container.innerHTML = '';
+        function renderSettingsUI() {
+            // 평가 항목 렌더링
+            const rowContainer = document.getElementById('eval-rows');
+            rowContainer.innerHTML = '';
+            
             if (currentMode === 'semester') {
-                evalItems.forEach((item, i) => {
-                    const div = document.createElement('div');
-                    div.className = 'flex gap-2 items-center group animate-in slide-in-from-right duration-300';
-                    div.innerHTML = `<input type="text" value="${item.name}" oninput="updateItemName(${i}, this.value)" placeholder="평가명" class="w-1/2 p-2 text-[11px] font-bold border bg-white rounded-lg outline-none focus:ring-1 focus:ring-indigo-300"><div class="flex items-center w-1/2 gap-1"><input type="number" value="${item.weight}" oninput="updateItemWeight(${i}, this.value)" class="w-full p-2 text-[11px] font-black border bg-white rounded-lg outline-none text-center focus:ring-1 focus:ring-indigo-300"><button onclick="removeEvalItem(${i})" class="text-rose-400 hover:text-rose-600 p-1 opacity-0 group-hover:opacity-100 transition-opacity">✕</button></div>`;
-                    container.appendChild(div);
+                evalList.forEach((item, idx) => {
+                    rowContainer.innerHTML += `
+                        <div class="flex gap-2 items-center">
+                            <input type="text" value="${item.name}" onchange="updateEval(${idx}, 'name', this.value)" class="flex-1 p-2 text-xs border rounded outline-none font-bold" placeholder="항목명">
+                            <input type="number" value="${item.weight}" onchange="updateEval(${idx}, 'weight', this.value)" class="w-16 p-2 text-xs border rounded outline-none text-center font-bold" placeholder="비율(%)">
+                            <button onclick="removeEvalItem(${idx})" class="text-red-400 font-bold px-2 hover:text-red-600">&times;</button>
+                        </div>`;
                 });
-                updateWeightCheck();
+                checkWeights();
             }
-            const fileList = document.getElementById('file-inputs-list');
-            fileList.innerHTML = '';
-            if (currentMode === 'single') createFileInput(fileList, "성적 데이터 (엑셀)", "file-0");
-            else evalItems.forEach((item, i) => createFileInput(fileList, `${item.name} (${item.weight}%)`, `file-${i}`));
+
+            // 파일 입력창 렌더링
+            const fileContainer = document.getElementById('file-inputs');
+            fileContainer.innerHTML = '';
+            
+            if (currentMode === 'single') {
+                fileContainer.innerHTML = `<input type="file" id="file-0" accept=".xlsx, .xls" class="block w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-bold file:bg-indigo-50 file:text-indigo-700 border border-slate-200 p-1 rounded-lg">`;
+            } else {
+                evalList.forEach((item, idx) => {
+                    fileContainer.innerHTML += `
+                        <div class="mb-2">
+                            <span class="text-xs font-bold text-slate-500 mb-1 block">${item.name} 데이터 (${item.weight}%)</span>
+                            <input type="file" id="file-${idx}" accept=".xlsx, .xls" class="block w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-bold file:bg-indigo-50 file:text-indigo-700 border border-slate-200 p-1 rounded-lg">
+                        </div>`;
+                });
+            }
         }
 
-        function updateWeightCheck() {
-            const total = evalItems.reduce((a,b) => a + b.weight, 0);
-            const msg = document.getElementById('weight-check');
-            msg.innerText = total !== 100 ? `현재 비율 합계: ${total}% (100% 미달)` : `비율 합계 완료: ${total}%`;
-            msg.style.color = total !== 100 ? '#f43f5e' : '#4f46e5';
+        function addEvalItem() { evalList.push({ name: '새 항목', weight: 0 }); renderSettingsUI(); }
+        function removeEvalItem(idx) { if (evalList.length > 1) { evalList.splice(idx, 1); renderSettingsUI(); } }
+        function updateEval(idx, key, val) { evalList[idx][key] = key === 'weight' ? Number(val) : val; checkWeights(); renderSettingsUI(); }
+        
+        function checkWeights() {
+            const sum = evalList.reduce((acc, cur) => acc + cur.weight, 0);
+            const msgObj = document.getElementById('weight-check');
+            msgObj.textContent = sum === 100 ? "✅ 비율 합계 100% 확인 완료" : `⚠️ 현재 합계: ${sum}% (100%를 맞춰주세요)`;
+            msgObj.className = sum === 100 ? "text-xs font-bold text-center mt-2 text-emerald-600" : "text-xs font-bold text-center mt-2 text-red-500";
+            return sum === 100;
         }
 
-        function createFileInput(container, label, id) {
-            const div = document.createElement('div');
-            div.innerHTML = `<p id="label-${id}" class="text-[10px] font-black text-slate-400 mb-1 ml-1 uppercase">${label}</p><input type="file" id="${id}" class="block w-full text-xs text-slate-400 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-[11px] file:font-black file:bg-indigo-50 file:text-indigo-600 border border-slate-100 rounded-2xl p-1 bg-white hover:border-indigo-200 transition-all cursor-pointer">`;
-            container.appendChild(div);
-        }
-
-        async function parseExcel(file) {
-            return new Promise((resolve) => {
+        // 2. 엑셀 파싱 로직 (클라이언트 사이드 전용)
+        function readExcelFile(file) {
+            return new Promise((resolve, reject) => {
+                if (!file) return resolve(null);
                 const reader = new FileReader();
                 reader.onload = (e) => {
-                    const workbook = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
-                    const rows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header: 1 });
-                    const classMap = {};
-                    const numCols = Math.max(...rows.map(r => r.length));
-                    for (let col = 0; col < numCols; col++) {
-                        let cls = null, students = [], start = -1;
-                        for (let r = 0; r < rows.length; r++) { if (typeof rows[r][col] === 'number') { cls = String(rows[r][col]); start = r + 1; break; } }
-                        if (cls !== null) {
-                            for (let r = start; r < rows.length; r++) {
-                                const score = rows[r][col];
-                                if (typeof score === 'number') students.push({ num: (col > 0 && typeof rows[r][0] === 'number' ? rows[r][0] : students.length + 1), score });
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                        const json = XLSX.utils.sheet_to_json(sheet, { header: 1 }); // 2차원 배열 형태
+                        
+                        let classData = {};
+                        
+                        // 데이터 탐색: 첫 번째 열이 번호, 나머지 열이 특정 반의 점수라고 가정
+                        // 헤더(반 이름) 찾기
+                        let headerRowIdx = -1;
+                        for(let i=0; i<Math.min(10, json.length); i++) {
+                            if(json[i] && json[i].length > 1 && json[i].some(v => typeof v === 'string' && (v.includes('반') || v.includes('class') || !isNaN(v)))) {
+                                headerRowIdx = i; break;
                             }
-                            if (students.length > 0) classMap[cls] = students;
                         }
+
+                        // 헤더가 명확하지 않으면 0번째 행을 헤더로 간주
+                        if(headerRowIdx === -1) headerRowIdx = 0;
+
+                        // 열별로 반 데이터 추출
+                        for (let col = 1; col < json[headerRowIdx].length; col++) {
+                            let className = String(json[headerRowIdx][col] || col); // 반 이름
+                            if(!className || className.trim() === '') continue;
+                            
+                            let students = [];
+                            for (let row = headerRowIdx + 1; row < json.length; row++) {
+                                let score = parseFloat(json[row][col]);
+                                let num = parseInt(json[row][0]);
+                                
+                                if (!isNaN(score)) {
+                                    students.push({ num: isNaN(num) ? row : num, score: score });
+                                }
+                            }
+                            if (students.length > 0) classData[className] = students;
+                        }
+                        resolve(classData);
+                    } catch (err) {
+                        reject("엑셀 파일을 읽는 중 오류가 발생했습니다. 양식을 확인해주세요.");
                     }
-                    resolve(classMap);
                 };
+                reader.onerror = () => reject("파일 읽기 실패");
                 reader.readAsArrayBuffer(file);
             });
         }
 
-        async function runAnalysis() {
+        // 3. 메인 분석 실행
+        async function executeAnalysis() {
             try {
-                let data = {};
+                let mergedData = {};
+
                 if (currentMode === 'single') {
-                    const f = document.getElementById('file-0').files[0];
-                    if (!f) throw "파일을 선택하세요.";
-                    data = await parseExcel(f);
+                    const fileInput = document.getElementById('file-0');
+                    if (!fileInput.files.length) return alert("엑셀 파일을 업로드해주세요.");
+                    mergedData = await readExcelFile(fileInput.files[0]);
                 } else {
-                    if (evalItems.reduce((a,b)=>a+b.weight,0) !== 100) throw "합계 100%를 맞춰주세요.";
-                    let temp = {};
-                    for (let i = 0; i < evalItems.length; i++) {
-                        const f = document.getElementById(`file-${i}`).files[0];
-                        if (!f) continue;
-                        const fData = await parseExcel(f);
-                        const w = evalItems[i].weight / 100;
-                        Object.keys(fData).forEach(c => {
-                            if (!temp[c]) temp[c] = {};
-                            fData[c].forEach(s => { temp[c][s.num] = (temp[c][s.num] || 0) + (s.score * w); });
+                    if (!checkWeights()) return alert("평가 항목의 비율 합계를 100%로 맞춰주세요.");
+                    
+                    let tempDB = {}; // { "반": { "번호": 누적점수 } }
+                    
+                    for (let i = 0; i < evalList.length; i++) {
+                        const fileInput = document.getElementById(`file-${i}`);
+                        if (!fileInput.files.length) continue; // 업로드 안 된 파일은 무시 (0점 처리 아님)
+                        
+                        const fileData = await readExcelFile(fileInput.files[0]);
+                        if(!fileData) continue;
+
+                        const weight = evalList[i].weight / 100;
+                        
+                        Object.keys(fileData).forEach(className => {
+                            if (!tempDB[className]) tempDB[className] = {};
+                            fileData[className].forEach(student => {
+                                if (!tempDB[className][student.num]) tempDB[className][student.num] = 0;
+                                tempDB[className][student.num] += (student.score * weight);
+                            });
                         });
                     }
-                    Object.keys(temp).forEach(c => data[c] = Object.keys(temp[c]).map(n => ({ num: parseInt(n), score: temp[c][n] })));
+
+                    // tempDB를 { "1": [{num:1, score:100}], ... } 형태로 변환
+                    Object.keys(tempDB).forEach(className => {
+                        mergedData[className] = Object.keys(tempDB[className]).map(num => ({
+                            num: parseInt(num),
+                            score: tempDB[className][num]
+                        }));
+                    });
                 }
-                masterData = data;
-                render();
-            } catch (e) { alert(e); }
+
+                if (Object.keys(mergedData).length === 0) {
+                    return alert("분석할 유효한 데이터가 없습니다. 엑셀 파일 형식을 확인해주세요.");
+                }
+
+                parsedData = mergedData;
+                calculateAndRender();
+
+            } catch (error) {
+                alert(error);
+            }
         }
 
-        function render() {
-            const all = Object.values(masterData).flat().sort((a,b) => b.score - a.score);
-            const total = all.length;
-            if (total === 0) return;
-            const avg = all.reduce((a,b)=>a+b.score,0)/total;
-            const std = Math.sqrt(all.map(x=>Math.pow(x.score-avg,2)).reduce((a,b)=>a+b,0)/total);
-
-            document.getElementById('stat-avg').innerText = avg.toFixed(2);
-            document.getElementById('stat-total').innerText = `${total}명`;
-            document.getElementById('stat-std').innerText = std.toFixed(2);
-
-            const sys = document.getElementById('gradeSystem').value;
-            const ratios = sys === '5' ? 
-                [{r:0.1, l:'1등급'}, {r:0.34, l:'2등급'}, {r:0.66, l:'3등급'}, {r:0.90, l:'4등급'}, {r:1.0, l:'5등급'}] :
-                [{r:0.04, l:'1등급'}, {r:0.11, l:'2등급'}, {r:0.23, l:'3등급'}, {r:0.4, l:'4등급'}, {r:0.6, l:'5등급'}, {r:0.77, l:'6등급'}, {r:0.89, l:'7등급'}, {r:0.96, l:'8등급'}, {r:1.0, l:'9등급'}];
-
-            gradeBoundaries = ratios.map(g => {
-                const targetIdx = Math.max(0, Math.round(total * g.r) - 1);
-                return { label: g.l, ratio: (g.r * 100).toFixed(0), targetCount: Math.round(total * g.r), cut: all[targetIdx].score };
+        // 4. 등급 계산 및 화면 출력
+        function calculateAndRender() {
+            // 모든 점수 추출 및 정렬
+            let allScores = [];
+            Object.keys(parsedData).forEach(cls => {
+                parsedData[cls].forEach(s => allScores.push(s.score));
             });
+            allScores.sort((a, b) => b - a);
+            
+            const totalCount = allScores.length;
+            const avg = allScores.reduce((a, b) => a + b, 0) / totalCount;
+            const variance = allScores.reduce((a, b) => a + Math.pow(b - avg, 2), 0) / totalCount;
+            const std = Math.sqrt(variance);
 
-            const tbody = document.getElementById('grade-table-body');
+            // 통계 요약 갱신
+            document.getElementById('res-avg').textContent = avg.toFixed(2);
+            document.getElementById('res-total').textContent = totalCount;
+            document.getElementById('res-std').textContent = std.toFixed(2);
+
+            // 등급 컷 계산
+            const gradeType = document.getElementById('gradeSystem').value;
+            const ratios = gradeType === '5' 
+                ? [0.10, 0.34, 0.66, 0.90, 1.00] 
+                : [0.04, 0.11, 0.23, 0.40, 0.60, 0.77, 0.89, 0.96, 1.00];
+
+            currentCuts = [];
+            const tbody = document.getElementById('grade-tbody');
             tbody.innerHTML = '';
-            gradeBoundaries.forEach((g, i) => {
+
+            ratios.forEach((ratio, idx) => {
+                const targetCount = Math.round(totalCount * ratio);
+                const cutIdx = Math.min(targetCount - 1, allScores.length - 1);
+                const cutScore = cutIdx >= 0 ? allScores[cutIdx] : 0;
+                
+                currentCuts.push({
+                    grade: idx + 1,
+                    cumCount: targetCount,
+                    cutScore: cutScore
+                });
+
+                // 테이블 행 추가
                 const tr = document.createElement('tr');
-                tr.className = 'hover:bg-slate-50 transition-all cursor-pointer group';
-                tr.onclick = () => showList(i);
-                tr.innerHTML = `<td class="p-5"><span class="grade-badge bg-indigo-50 text-indigo-700 group-hover:bg-indigo-600 group-hover:text-white transition-all">${g.label}</span></td><td class="p-5 text-slate-400 text-[11px]">${g.ratio}%</td><td class="p-5 text-slate-600">${g.targetCount}명</td><td class="p-5 text-xl font-black text-slate-900 tracking-tighter">${g.cut.toFixed(2)}</td><td class="p-5 no-print text-indigo-400 text-right">➔</td>`;
+                tr.className = "hover:bg-slate-50 transition-colors cursor-pointer group";
+                tr.onclick = () => showModal(idx + 1);
+                tr.innerHTML = `
+                    <td class="py-3 font-black text-indigo-600">${idx + 1}등급</td>
+                    <td class="py-3 text-slate-500">${(ratio * 100).toFixed(0)}%</td>
+                    <td class="py-3 font-bold text-slate-700">${targetCount}명</td>
+                    <td class="py-3 font-black text-lg">${cutScore.toFixed(2)}</td>
+                    <td class="py-3 text-indigo-400 no-print group-hover:text-indigo-600 font-bold">확인 &rarr;</td>
+                `;
                 tbody.appendChild(tr);
             });
 
-            const clsKeys = Object.keys(masterData).sort((a,b)=>parseInt(a)-parseInt(b));
-            document.getElementById('bar-scope-select').innerHTML = '<option value="all">전체 분포</option>' + clsKeys.map(c => `<option value="${c}">${c}반 분포</option>`).join('');
-            document.getElementById('pie-class-select').innerHTML = clsKeys.map(c => `<option value="${c}">${c}반 등급 비율</option>`).join('');
+            // 셀렉트 박스 갱신 및 차트 그리기
+            const classKeys = Object.keys(parsedData).sort((a, b) => {
+                // 숫자형 반이름 정렬
+                let numA = parseInt(a), numB = parseInt(b);
+                if(!isNaN(numA) && !isNaN(numB)) return numA - numB;
+                return a.localeCompare(b);
+            });
+
+            const selBar = document.getElementById('sel-bar');
+            selBar.innerHTML = '<option value="all">전체 학년</option>' + classKeys.map(c => `<option value="${c}">${c}반</option>`).join('');
             
-            ['stats-dashboard', 'result-table-card', 'bar-chart-card', 'chart-card'].forEach(id => document.getElementById(id).classList.remove('hidden'));
-            document.getElementById('btn-pdf').classList.remove('hidden');
-            updateBarChart();
-            updatePieChart();
+            const selPie = document.getElementById('sel-pie');
+            selPie.innerHTML = classKeys.map(c => `<option value="${c}">${c}반</option>`).join('');
+
+            // UI 보이기
+            document.getElementById('result-summary').classList.remove('hidden');
+            document.getElementById('result-table').classList.remove('hidden');
+            document.getElementById('chart-bar').classList.remove('hidden');
+            document.getElementById('chart-pie').classList.remove('hidden');
+            document.getElementById('btn-print').classList.remove('hidden');
+
+            drawBarChart();
+            drawPieChart();
         }
 
-        function updateBarChart() {
-            const scope = document.getElementById('bar-scope-select').value;
-            const scores = scope === 'all' ? Object.values(masterData).flat() : masterData[scope];
-            const ctx = document.getElementById('barChart').getContext('2d');
-            if (charts.bar) charts.bar.destroy();
-            const bins = Array(10).fill(0);
-            scores.forEach(s => { let idx = Math.floor(s.score / 10); if (idx >= 10) idx = 9; bins[idx]++; });
-            charts.bar = new Chart(ctx, {
+        // 5. 차트 그리기 로직
+        function drawBarChart() {
+            const target = document.getElementById('sel-bar').value;
+            let scores = [];
+            if (target === 'all') {
+                Object.values(parsedData).forEach(arr => arr.forEach(s => scores.push(s.score)));
+            } else {
+                scores = parsedData[target].map(s => s.score);
+            }
+
+            // 히스토그램 데이터 만들기 (10점 단위)
+            let bins = Array(10).fill(0);
+            scores.forEach(s => {
+                let idx = Math.floor(s / 10);
+                if (idx >= 10) idx = 9; // 100점은 마지막 구간에 포함
+                if (idx < 0) idx = 0;
+                bins[idx]++;
+            });
+
+            if (chartInstances.bar) chartInstances.bar.destroy();
+            
+            const ctx = document.getElementById('canvasBar').getContext('2d');
+            chartInstances.bar = new Chart(ctx, {
                 type: 'bar',
                 data: {
                     labels: ['0-10', '10-20', '20-30', '30-40', '40-50', '50-60', '60-70', '70-80', '80-90', '90-100'],
-                    datasets: [{ label: '학생 수', data: bins, backgroundColor: scope === 'all' ? 'rgba(79, 70, 229, 0.6)' : 'rgba(16, 185, 129, 0.6)', borderColor: scope === 'all' ? '#4f46e5' : '#10b981', borderWidth: 2, borderRadius: 6 }]
+                    datasets: [{
+                        label: '학생 수',
+                        data: bins,
+                        backgroundColor: '#6366f1',
+                        borderRadius: 4
+                    }]
                 },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true }, x: { grid: { display: false } } } }
+                options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
             });
         }
 
-        function updatePieChart() {
-            const cls = document.getElementById('pie-class-select').value;
-            const students = masterData[cls];
-            const ctx = document.getElementById('pieChart').getContext('2d');
-            if (charts.pie) charts.pie.destroy();
-            const dist = gradeBoundaries.map((g, i) => {
-                const upper = i === 0 ? 9999 : gradeBoundaries[i-1].cut;
-                return students.filter(s => s.score >= g.cut && s.score < upper).length;
+        function drawPieChart() {
+            const target = document.getElementById('sel-pie').value;
+            const students = parsedData[target] || [];
+            
+            // 등급별 인원 수 계산
+            let gradeCounts = Array(currentCuts.length).fill(0);
+            students.forEach(student => {
+                for (let i = 0; i < currentCuts.length; i++) {
+                    if (student.score >= currentCuts[i].cutScore) {
+                        gradeCounts[i]++;
+                        break;
+                    }
+                }
             });
-            charts.pie = new Chart(ctx, {
+
+            if (chartInstances.pie) chartInstances.pie.destroy();
+
+            const ctx = document.getElementById('canvasPie').getContext('2d');
+            chartInstances.pie = new Chart(ctx, {
                 type: 'doughnut',
-                data: { labels: gradeBoundaries.map(g => g.label), datasets: [{ data: dist, backgroundColor: COLORS, hoverOffset: 15, borderRadius: 8 }] },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } }
+                data: {
+                    labels: currentCuts.map(c => `${c.grade}등급`),
+                    datasets: [{
+                        data: gradeCounts,
+                        backgroundColor: ['#4f46e5','#6366f1','#8b5cf6','#a855f7','#d946ef','#ec4899','#f43f5e','#f97316','#eab308'],
+                        borderWidth: 0
+                    }]
+                },
+                options: { maintainAspectRatio: false, plugins: { legend: { position: 'right' } } }
             });
         }
 
-        function showList(idx) {
-            const g = gradeBoundaries[idx], upper = idx === 0 ? 9999 : gradeBoundaries[idx-1].cut;
-            let list = [];
-            Object.keys(masterData).forEach(cls => masterData[cls].forEach(s => { if (s.score >= g.cut && s.score < upper) list.push({ cls, ...s }); }));
-            list.sort((a,b) => b.score - a.score);
-            document.getElementById('modalTitle').innerText = `${g.label} 명단`;
-            document.getElementById('modalSub').innerText = `${g.cut.toFixed(2)}점 ~ ${upper === 9999 ? '만점' : upper.toFixed(2) + '점'}`;
-            document.getElementById('modalContent').innerHTML = list.map(item => `<div class="flex justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100"><span class="font-bold">${item.cls}반 ${item.num}번</span><span class="font-black text-indigo-600">${item.score.toFixed(2)}</span></div>`).join('');
-            document.getElementById('listModal').style.display = 'flex';
+        // 6. 명단 모달 로직
+        function showModal(targetGrade) {
+            const cutData = currentCuts[targetGrade - 1];
+            const lowerBound = cutData.cutScore;
+            const upperBound = targetGrade === 1 ? Infinity : currentCuts[targetGrade - 2].cutScore;
+
+            let targetStudents = [];
+            Object.keys(parsedData).forEach(className => {
+                parsedData[className].forEach(student => {
+                    if (student.score >= lowerBound && student.score < upperBound) {
+                        targetStudents.push({ cls: className, num: student.num, score: student.score });
+                    }
+                });
+            });
+
+            targetStudents.sort((a, b) => b.score - a.score);
+
+            document.getElementById('modal-title').textContent = `${targetGrade}등급 명단`;
+            document.getElementById('modal-desc').textContent = `컷 점수: ${lowerBound.toFixed(2)}점 이상`;
+            
+            const listHtml = targetStudents.map(s => `
+                <div class="flex justify-between items-center bg-slate-50 p-3 rounded-lg border border-slate-100">
+                    <span class="font-bold text-slate-700">${s.cls}반 ${s.num}번</span>
+                    <span class="font-black text-indigo-600">${s.score.toFixed(2)}점</span>
+                </div>
+            `).join('');
+            
+            document.getElementById('modal-list').innerHTML = listHtml || '<p class="text-center text-slate-400 py-4">해당 등급 인원이 없습니다.</p>';
+            document.getElementById('modal').style.display = 'flex';
         }
 
-        function closeModal() { document.getElementById('listModal').style.display = 'none'; }
-        window.onload = () => { setMode('single'); };
+        function closeModal() {
+            document.getElementById('modal').style.display = 'none';
+        }
+
+        // 초기화
+        window.onload = () => setMode('single');
     </script>
 </body>
 </html>
