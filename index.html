@@ -34,7 +34,7 @@
             <div>
                 <span class="inline-block bg-emerald-100 text-emerald-700 text-xs font-bold px-2 py-1 rounded mb-2">데이터 클리닝 엔진 탑재</span>
                 <h1 class="text-3xl font-black text-slate-900 tracking-tight">성적 통합 분석 시스템</h1>
-                <p class="text-slate-500 mt-1">절대좌표 매핑 및 0점/자퇴/하단 통계 완벽 필터링</p>
+                <p class="text-slate-500 mt-1">절대좌표 매핑 및 빈칸(결번)/자퇴/하단 통계 완벽 필터링</p>
             </div>
             <div class="flex gap-2 no-print">
                 <button onclick="window.print()" id="btn-print" class="hidden px-4 py-2 bg-white border border-slate-300 rounded-lg text-sm font-bold shadow-sm hover:bg-slate-50">🖨️ PDF 리포트</button>
@@ -103,7 +103,7 @@
                     <div class="card text-center p-6">
                         <p class="text-sm font-medium text-slate-500 mb-1">유효 응시 인원</p>
                         <p id="res-total" class="text-4xl font-black text-slate-800">0</p>
-                        <p class="text-[10px] text-slate-400 mt-1">(0점, 자퇴 등 제외됨)</p>
+                        <p class="text-[10px] text-slate-400 mt-1">(빈칸 결번, 자퇴 등 완벽 제외됨)</p>
                     </div>
                     <div class="card text-center p-6">
                         <p class="text-sm font-medium text-slate-500 mb-1">표준 편차</p>
@@ -286,7 +286,7 @@
                             }
                         }
 
-                        // [규칙 3] 점수 읽어오기 (결측치, 자퇴, 빈칸 무시)
+                        // [규칙 3] 점수 읽어오기 (결측치, 결번, 자퇴 완벽 필터링)
                         for (let r = 5; r <= endRowIdx; r++) {
                             let aCellAddr = XLSX.utils.encode_cell({ r: r, c: 0 });
                             let aCell = sheet[aCellAddr];
@@ -301,20 +301,24 @@
                                 let scoreCellAddr = XLSX.utils.encode_cell({ r: r, c: parseInt(c) }); 
                                 let scoreCell = sheet[scoreCellAddr];
                                 
-                                let scoreVal = 0; // 빈칸, 결시 등은 기본적으로 0점 처리하여 모수(인원수)에 포함
+                                // 핵심 수정: 빈칸(결번) 완벽 제외 로직
+                                // 셀이 아예 없거나, 값이 없거나, 완전히 비어있는 칸이면 "해당 반에 없는 학생(결번)"이므로 무시함
+                                if (!scoreCell || scoreCell.v === undefined || scoreCell.v === null) continue;
+                                let strVal = String(scoreCell.w || scoreCell.v).trim();
+                                if (strVal === '') continue; 
 
-                                if (scoreCell && scoreCell.v !== undefined && scoreCell.v !== null) {
-                                    let strVal = String(scoreCell.w || scoreCell.v).trim();
-                                    
-                                    if (strVal === '자퇴' || strVal === '전출') {
-                                        scoreVal = 'EXCLUDE'; // 자퇴/전출은 인원수 제외 마커 표시
-                                    } else {
-                                        let parsedScore = parseFloat(scoreCell.v);
-                                        if (!isNaN(parsedScore)) {
-                                            scoreVal = parsedScore;
-                                        }
+                                // 위에서 빈칸을 걸렀으므로, 아래부터는 "문자(결시 등)"이거나 "점수"이거나 "자퇴/전출"인 경우임
+                                let scoreVal = 0; // 결시, 미인정결 등의 글자는 기본적으로 0점으로 처리하여 모수에 포함시킴
+
+                                if (strVal === '자퇴' || strVal === '전출') {
+                                    scoreVal = 'EXCLUDE'; // 자퇴/전출은 인원수 제외 마커 표시
+                                } else {
+                                    let parsedScore = parseFloat(scoreCell.v);
+                                    if (!isNaN(parsedScore)) {
+                                        scoreVal = parsedScore; // 정상 점수
                                     }
                                 }
+                                
                                 classData[className][studentNum] = { num: studentNum, score: scoreVal };
                             }
                         }
@@ -339,7 +343,7 @@
             });
         }
 
-        // 3. 메인 분석 실행 (0점 완전 배제 처리 포함)
+        // 3. 메인 분석 실행
         async function executeAnalysis() {
             try {
                 let mergedData = {};
@@ -391,7 +395,7 @@
                     return alert("분석할 유효한 데이터가 없습니다. 양식을 다시 확인해주세요.");
                 }
 
-                // [핵심] 자퇴/전출(EXCLUDE) 마커가 있는 학생만 인원수에서 완벽히 제외, 0점은 유지
+                // [핵심] 자퇴/전출(EXCLUDE) 마커가 있는 학생만 인원수에서 완벽히 제외, 결시 등 0점은 유지
                 Object.keys(mergedData).forEach(className => {
                     mergedData[className] = mergedData[className].filter(student => student.score !== 'EXCLUDE');
                     // 만약 특정 반에 유효 인원이 0명이면 해당 반 키 자체를 삭제
@@ -420,7 +424,7 @@
             });
             allScores.sort((a, b) => b - a);
             
-            const totalCount = allScores.length; // 0점, 자퇴 등이 모두 제외된 "순수 유효 응시 인원"
+            const totalCount = allScores.length; // 빈칸, 자퇴 등이 완벽히 제외된 "순수 유효 응시 인원"
             
             if (totalCount === 0) return; // 에러 방지
 
