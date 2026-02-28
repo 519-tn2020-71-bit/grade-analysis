@@ -80,7 +80,7 @@
                         <div>
                             <div class="flex justify-between items-end mb-2">
                                 <label class="block text-sm font-bold text-slate-700">엑셀 데이터 업로드</label>
-                                <span class="text-[10px] text-slate-400">1열: 번호 / 그 외 열: 점수</span>
+                                <span class="text-[10px] text-slate-400">양식: 5행 반, 6행 점수, A열 번호</span>
                             </div>
                             <div id="file-inputs" class="space-y-3"></div>
                         </div>
@@ -172,7 +172,7 @@
         // 전역 상태 변수
         let currentMode = 'single';
         let evalList = [{ name: '중간고사', weight: 40 }, { name: '기말고사', weight: 40 }, { name: '수행평가', weight: 20 }];
-        let parsedData = {}; // { "1": [{num:1, score:100}, ...], "2": ... }
+        let parsedData = {}; 
         let currentCuts = [];
         let chartInstances = { bar: null, pie: null };
 
@@ -186,7 +186,6 @@
         }
 
         function renderSettingsUI() {
-            // 평가 항목 렌더링
             const rowContainer = document.getElementById('eval-rows');
             rowContainer.innerHTML = '';
             
@@ -202,7 +201,6 @@
                 checkWeights();
             }
 
-            // 파일 입력창 렌더링
             const fileContainer = document.getElementById('file-inputs');
             fileContainer.innerHTML = '';
             
@@ -231,7 +229,7 @@
             return sum === 100;
         }
 
-        // 2. 엑셀 파싱 로직 (클라이언트 사이드 전용)
+        // 2. 엑셀 파싱 로직 (요청하신 규칙 적용 완료)
         function readExcelFile(file) {
             return new Promise((resolve, reject) => {
                 if (!file) return resolve(null);
@@ -245,33 +243,44 @@
                         
                         let classData = {};
                         
-                        // 데이터 탐색: 첫 번째 열이 번호, 나머지 열이 특정 반의 점수라고 가정
-                        // 헤더(반 이름) 찾기
-                        let headerRowIdx = -1;
-                        for(let i=0; i<Math.min(10, json.length); i++) {
-                            if(json[i] && json[i].length > 1 && json[i].some(v => typeof v === 'string' && (v.includes('반') || v.includes('class') || !isNaN(v)))) {
-                                headerRowIdx = i; break;
-                            }
+                        // 사용자가 지정한 규칙
+                        const headerRowIdx = 4; // 5행 (자바스크립트 배열은 0부터 시작하므로 4)
+                        const startDataRowIdx = 5; // 6행부터 데이터 시작 (배열 인덱스 5)
+
+                        // 데이터가 충분하지 않은 경우 예외 처리
+                        if (json.length <= startDataRowIdx) {
+                            return reject("데이터가 부족합니다. 5행에 반 번호, 6행부터 점수가 있어야 합니다.");
                         }
 
-                        // 헤더가 명확하지 않으면 0번째 행을 헤더로 간주
-                        if(headerRowIdx === -1) headerRowIdx = 0;
-
-                        // 열별로 반 데이터 추출
+                        // 5행(headerRowIdx)의 각 열(B열부터, 인덱스 1부터)을 순회하며 반 식별
                         for (let col = 1; col < json[headerRowIdx].length; col++) {
-                            let className = String(json[headerRowIdx][col] || col); // 반 이름
-                            if(!className || className.trim() === '') continue;
+                            let className = String(json[headerRowIdx][col] || '').trim();
+                            if (!className || className === 'undefined') continue; // 비어있는 열 통과
                             
                             let students = [];
-                            for (let row = headerRowIdx + 1; row < json.length; row++) {
-                                let score = parseFloat(json[row][col]);
-                                let num = parseInt(json[row][0]);
+                            
+                            // 6행(startDataRowIdx)부터 아래로 순회하며 점수 읽기
+                            for (let row = startDataRowIdx; row < json.length; row++) {
+                                let aColValue = String(json[row][0] || '').trim(); // A열 (학생 번호 또는 종료 조건)
                                 
-                                if (!isNaN(score)) {
-                                    students.push({ num: isNaN(num) ? row : num, score: score });
+                                // 종료 조건: A열에 "응시생수"가 포함되어 있으면 데이터 읽기 중단
+                                if (aColValue.includes("응시생수")) {
+                                    break; 
+                                }
+
+                                let num = parseInt(aColValue); // 학생 번호
+                                let score = parseFloat(json[row][col]); // 해당 반의 점수
+                                
+                                // 번호와 점수가 모두 정상적인 숫자일 때만 저장
+                                if (!isNaN(num) && !isNaN(score)) {
+                                    students.push({ num: num, score: score });
                                 }
                             }
-                            if (students.length > 0) classData[className] = students;
+                            
+                            // 해당 반에 학생 데이터가 1명이라도 있으면 추가
+                            if (students.length > 0) {
+                                classData[className] = students;
+                            }
                         }
                         resolve(classData);
                     } catch (err) {
@@ -295,11 +304,11 @@
                 } else {
                     if (!checkWeights()) return alert("평가 항목의 비율 합계를 100%로 맞춰주세요.");
                     
-                    let tempDB = {}; // { "반": { "번호": 누적점수 } }
+                    let tempDB = {}; 
                     
                     for (let i = 0; i < evalList.length; i++) {
                         const fileInput = document.getElementById(`file-${i}`);
-                        if (!fileInput.files.length) continue; // 업로드 안 된 파일은 무시 (0점 처리 아님)
+                        if (!fileInput.files.length) continue; 
                         
                         const fileData = await readExcelFile(fileInput.files[0]);
                         if(!fileData) continue;
@@ -315,7 +324,6 @@
                         });
                     }
 
-                    // tempDB를 { "1": [{num:1, score:100}], ... } 형태로 변환
                     Object.keys(tempDB).forEach(className => {
                         mergedData[className] = Object.keys(tempDB[className]).map(num => ({
                             num: parseInt(num),
@@ -324,8 +332,8 @@
                     });
                 }
 
-                if (Object.keys(mergedData).length === 0) {
-                    return alert("분석할 유효한 데이터가 없습니다. 엑셀 파일 형식을 확인해주세요.");
+                if (!mergedData || Object.keys(mergedData).length === 0) {
+                    return alert("분석할 유효한 데이터가 없습니다. 지정된 엑셀 파일 형식(5행 반, A열 번호 등)이 맞는지 확인해주세요.");
                 }
 
                 parsedData = mergedData;
@@ -338,7 +346,6 @@
 
         // 4. 등급 계산 및 화면 출력
         function calculateAndRender() {
-            // 모든 점수 추출 및 정렬
             let allScores = [];
             Object.keys(parsedData).forEach(cls => {
                 parsedData[cls].forEach(s => allScores.push(s.score));
@@ -350,12 +357,10 @@
             const variance = allScores.reduce((a, b) => a + Math.pow(b - avg, 2), 0) / totalCount;
             const std = Math.sqrt(variance);
 
-            // 통계 요약 갱신
             document.getElementById('res-avg').textContent = avg.toFixed(2);
             document.getElementById('res-total').textContent = totalCount;
             document.getElementById('res-std').textContent = std.toFixed(2);
 
-            // 등급 컷 계산
             const gradeType = document.getElementById('gradeSystem').value;
             const ratios = gradeType === '5' 
                 ? [0.10, 0.34, 0.66, 0.90, 1.00] 
@@ -376,7 +381,6 @@
                     cutScore: cutScore
                 });
 
-                // 테이블 행 추가
                 const tr = document.createElement('tr');
                 tr.className = "hover:bg-slate-50 transition-colors cursor-pointer group";
                 tr.onclick = () => showModal(idx + 1);
@@ -390,9 +394,7 @@
                 tbody.appendChild(tr);
             });
 
-            // 셀렉트 박스 갱신 및 차트 그리기
             const classKeys = Object.keys(parsedData).sort((a, b) => {
-                // 숫자형 반이름 정렬
                 let numA = parseInt(a), numB = parseInt(b);
                 if(!isNaN(numA) && !isNaN(numB)) return numA - numB;
                 return a.localeCompare(b);
@@ -404,7 +406,6 @@
             const selPie = document.getElementById('sel-pie');
             selPie.innerHTML = classKeys.map(c => `<option value="${c}">${c}반</option>`).join('');
 
-            // UI 보이기
             document.getElementById('result-summary').classList.remove('hidden');
             document.getElementById('result-table').classList.remove('hidden');
             document.getElementById('chart-bar').classList.remove('hidden');
@@ -425,11 +426,10 @@
                 scores = parsedData[target].map(s => s.score);
             }
 
-            // 히스토그램 데이터 만들기 (10점 단위)
             let bins = Array(10).fill(0);
             scores.forEach(s => {
                 let idx = Math.floor(s / 10);
-                if (idx >= 10) idx = 9; // 100점은 마지막 구간에 포함
+                if (idx >= 10) idx = 9; 
                 if (idx < 0) idx = 0;
                 bins[idx]++;
             });
@@ -456,7 +456,6 @@
             const target = document.getElementById('sel-pie').value;
             const students = parsedData[target] || [];
             
-            // 등급별 인원 수 계산
             let gradeCounts = Array(currentCuts.length).fill(0);
             students.forEach(student => {
                 for (let i = 0; i < currentCuts.length; i++) {
