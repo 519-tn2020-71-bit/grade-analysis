@@ -261,11 +261,9 @@
 
                 if (!isDataRow) {
                     let isHeader = false;
-                    // 버그 수정됨: '일반계' 등 다른 단어의 '반'을 오인식하지 않도록 매우 엄격하게 조건 변경
                     if (cleanFirst === '반번호' || cleanFirst === '반' || cleanFirst === '번호' || cleanFirst === '학번' || (cleanFirst.includes('반') && cleanFirst.includes('번호'))) {
                         isHeader = true;
                     } else {
-                        // 헤더 글자가 훼손되었을 경우를 대비한 2차 숫자연속 검사 (1, 2, 3...)
                         let consecutiveNumbers = 0;
                         let expected = 1;
                         for (let c = 1; c <= Math.min(cols.length - 1, 10); c++) {
@@ -384,6 +382,7 @@
 
                             let score = parseFloat(rawVal);
                             if (!isNaN(score)) {
+                                // [정정된 로직] 나이스 기준에 맞게 각 항목은 비율만 곱하고, 반올림 없이 그대로 모두 더함
                                 let weighted = score * (pf.weight / 100);
                                 masterDB[key].totalScore += weighted;
                                 masterDB[key].weightedScores[pf.name] = weighted;
@@ -408,7 +407,8 @@
                         }
                         dropNames.push(`${stu.classNum}반 ${stu.stuNum}번(${reason})`);
                     } else {
-                        stu.totalScore = Number(stu.totalScore.toFixed(2));
+                        // [정정된 로직] 최종 합산된 총점에 대해서만 소수 셋째 자리에서 반올림 (Number.EPSILON 추가로 JS 부동소수점 오류 완벽 방지)
+                        stu.totalScore = Math.round((stu.totalScore + Number.EPSILON) * 100) / 100;
                         validStudents.push(stu);
                     }
                 }
@@ -557,7 +557,9 @@
                         let subHtml = `<div class="font-semibold text-gray-800">${rawStr}</div>`;
                         
                         if (weightScore !== undefined) {
-                            subHtml += `<div class="text-xs text-blue-500 font-bold">(${weightScore.toFixed(2)})</div>`;
+                            // 컴퓨터 계산 시 발생하는 쓰레기값(0.000000002 등)만 화면에서 제거하고 원본 그대로 표시
+                            let displayScore = Number(weightScore.toFixed(4)); 
+                            subHtml += `<div class="text-xs text-blue-500 font-bold">환산점수: ${displayScore}</div>`;
                         } else {
                             subHtml += `<div class="text-xs text-gray-400">(-)</div>`;
                         }
