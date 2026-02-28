@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="google" content="notranslate">
-    <title>성적 통합 분석 시스템 - 단일 파일 버전</title>
+    <title>성적 통합 분석 시스템 - 정밀 데이터 필터링</title>
     
     <!-- 필수 라이브러리 로드 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -34,7 +34,7 @@
             <div>
                 <span class="inline-block bg-emerald-100 text-emerald-700 text-xs font-bold px-2 py-1 rounded mb-2">데이터 클리닝 엔진 탑재</span>
                 <h1 class="text-3xl font-black text-slate-900 tracking-tight">성적 통합 분석 시스템</h1>
-                <p class="text-slate-500 mt-1">절대좌표 매핑 및 빈칸(결번)/자퇴/하단 통계 완벽 필터링</p>
+                <p class="text-slate-500 mt-1">숫자 데이터(실제 응시자)만 엄격하게 추출하여 완벽 필터링 (결시/미인정결 제외)</p>
             </div>
             <div class="flex gap-2 no-print">
                 <button onclick="window.print()" id="btn-print" class="hidden px-4 py-2 bg-white border border-slate-300 rounded-lg text-sm font-bold shadow-sm hover:bg-slate-50">🖨️ PDF 리포트</button>
@@ -101,9 +101,9 @@
                         <p id="res-avg" class="text-4xl font-black">0.00</p>
                     </div>
                     <div class="card text-center p-6">
-                        <p class="text-sm font-medium text-slate-500 mb-1">유효 응시 인원</p>
-                        <p id="res-total" class="text-4xl font-black text-slate-800">0</p>
-                        <p class="text-[10px] text-slate-400 mt-1">(빈칸 결번, 자퇴 등 완벽 제외됨)</p>
+                        <p class="text-sm font-medium text-slate-500 mb-1">실제 유효 인원</p>
+                        <p id="res-total" class="text-4xl font-black text-indigo-600">0</p>
+                        <p class="text-[10px] text-slate-400 mt-1">(결시/미인정 등 글자 100% 제외)</p>
                     </div>
                     <div class="card text-center p-6">
                         <p class="text-sm font-medium text-slate-500 mb-1">표준 편차</p>
@@ -172,7 +172,11 @@
     <script>
         // 전역 상태 변수
         let currentMode = 'single';
-        let evalList = [{ name: '중간고사', weight: 40 }, { name: '기말고사', weight: 40 }, { name: '수행평가', weight: 20 }];
+        let evalList = [
+            { name: '중간고사', weight: 40 }, 
+            { name: '기말고사', weight: 40 }, 
+            { name: '수행평가', weight: 20 }
+        ];
         let parsedData = {}; 
         let currentCuts = [];
         let chartInstances = { bar: null, pie: null };
@@ -193,10 +197,10 @@
             if (currentMode === 'semester') {
                 evalList.forEach((item, idx) => {
                     rowContainer.innerHTML += `
-                        <div class="flex gap-2 items-center">
-                            <input type="text" value="${item.name}" onchange="updateEval(${idx}, 'name', this.value)" class="flex-1 p-2 text-xs border rounded outline-none font-bold" placeholder="항목명">
-                            <input type="number" value="${item.weight}" onchange="updateEval(${idx}, 'weight', this.value)" class="w-16 p-2 text-xs border rounded outline-none text-center font-bold" placeholder="비율(%)">
-                            <button onclick="removeEvalItem(${idx})" class="text-red-400 font-bold px-2 hover:text-red-600">&times;</button>
+                        <div class="flex gap-2 items-center bg-white p-2 rounded border border-indigo-50">
+                            <input type="text" value="${item.name}" onchange="updateEval(${idx}, 'name', this.value)" class="flex-1 p-2 text-xs border border-slate-200 rounded outline-none font-bold text-slate-700" placeholder="항목명">
+                            <input type="number" value="${item.weight}" onchange="updateEval(${idx}, 'weight', this.value)" title="비율(%)" class="w-16 p-2 text-xs border border-slate-200 rounded outline-none text-center font-bold text-indigo-600" placeholder="비율(%)">
+                            <button onclick="removeEvalItem(${idx})" class="text-slate-300 hover:text-red-500 font-black px-2 transition-colors">&times;</button>
                         </div>`;
                 });
                 checkWeights();
@@ -230,7 +234,7 @@
             return sum === 100;
         }
 
-        // 2. 엑셀 파싱 로직 (결측치 처리 및 통계행 완벽 차단)
+        // 2. 엑셀 정밀 파싱 로직 (문자값 완벽 제외 & 우측 통계열 방어)
         function readExcelFile(file) {
             return new Promise((resolve, reject) => {
                 if (!file) return resolve(null);
@@ -253,7 +257,9 @@
                             let cell = sheet[cellAddr];
                             if (cell && cell.v !== undefined && cell.v !== null) {
                                 let className = String(cell.v).trim();
-                                if (className !== '') {
+                                // [수정 포인트 A] 반 이름은 무조건 숫자로 시작해야 함 (예: "1", "2반"). 
+                                // 우측의 "계", "평균", "비고" 열이 반으로 인식되는 현상 완벽 방어!
+                                if (className !== '' && /^\d+/.test(className)) {
                                     classCols[c] = className;
                                     classData[className] = {}; 
                                 }
@@ -262,18 +268,15 @@
 
                         if (Object.keys(classCols).length === 0) return reject("5행에서 반 번호를 찾을 수 없습니다.");
 
-                        // [규칙 2] 하단 통계행(응시생수, 평균 등)이 시작되는 행을 찾아내어 정확히 그 위까지만 자르기
+                        // [규칙 2] 하단 통계행 필터링 (기존 로직 유지)
                         let endRowIdx = range.e.r;
                         for (let r = 5; r <= range.e.r; r++) {
                             let isFooterRow = false;
-                            // 혹시 몰라 A열~E열(c:0~4)까지 여유있게 검사
                             for (let c = 0; c <= Math.min(4, range.e.c); c++) {
                                 let cellAddr = XLSX.utils.encode_cell({ r: r, c: c });
                                 let cell = sheet[cellAddr];
                                 if (cell && cell.v) {
-                                    // 공백 제거 후 텍스트 비교
                                     let val = String(cell.v).replace(/\s/g, ''); 
-                                    // 하단 통계행에 자주 쓰이는 키워드가 하나라도 나오면
                                     if (val.includes("응시") || val.includes("평균") || val.includes("표준편차") || val.includes("합계")) {
                                         isFooterRow = true;
                                         break;
@@ -281,12 +284,12 @@
                                 }
                             }
                             if (isFooterRow) {
-                                endRowIdx = r - 1; // 통계행 바로 직전까지만 데이터로 인정
+                                endRowIdx = r - 1; 
                                 break;
                             }
                         }
 
-                        // [규칙 3] 점수 읽어오기 (결측치, 결번, 자퇴 완벽 필터링)
+                        // [규칙 3] 셀 데이터 원형 그대로 읽어오기 (자퇴/결시 등 상태 판별용)
                         for (let r = 5; r <= endRowIdx; r++) {
                             let aCellAddr = XLSX.utils.encode_cell({ r: r, c: 0 });
                             let aCell = sheet[aCellAddr];
@@ -301,38 +304,14 @@
                                 let scoreCellAddr = XLSX.utils.encode_cell({ r: r, c: parseInt(c) }); 
                                 let scoreCell = sheet[scoreCellAddr];
                                 
-                                // 핵심 수정: 빈칸(결번) 완벽 제외 로직
-                                // 셀이 아예 없거나, 값이 없거나, 완전히 비어있는 칸이면 "해당 반에 없는 학생(결번)"이므로 무시함
-                                if (!scoreCell || scoreCell.v === undefined || scoreCell.v === null) continue;
-                                let strVal = String(scoreCell.w || scoreCell.v).trim();
-                                if (strVal === '') continue; 
-
-                                // 위에서 빈칸을 걸렀으므로, 아래부터는 "문자(결시 등)"이거나 "점수"이거나 "자퇴/전출"인 경우임
-                                let scoreVal = 0; // 결시, 미인정결 등의 글자는 기본적으로 0점으로 처리하여 모수에 포함시킴
-
-                                if (strVal === '자퇴' || strVal === '전출') {
-                                    scoreVal = 'EXCLUDE'; // 자퇴/전출은 인원수 제외 마커 표시
-                                } else {
-                                    let parsedScore = parseFloat(scoreCell.v);
-                                    if (!isNaN(parsedScore)) {
-                                        scoreVal = parsedScore; // 정상 점수
-                                    }
-                                }
-                                
-                                classData[className][studentNum] = { num: studentNum, score: scoreVal };
+                                // 숫자 변환 없이, 원본 글자 그대로 저장 (자퇴, 결시 등 문맥 파악을 위해)
+                                let rawVal = scoreCell && scoreCell.v !== undefined ? String(scoreCell.v).replace(/\s/g, '') : "";
+                                classData[className][studentNum] = rawVal;
                             }
                         }
 
-                        // 정리
-                        let finalData = {};
-                        for (let className in classData) {
-                            let studentsArray = Object.values(classData[className]);
-                            if (studentsArray.length > 0) {
-                                studentsArray.sort((a, b) => a.num - b.num);
-                                finalData[className] = studentsArray;
-                            }
-                        }
-                        resolve(finalData);
+                        // 정리 생략 (바로 반환)
+                        resolve(classData);
                     } catch (err) {
                         console.error(err);
                         reject("엑셀 파일을 읽는 중 오류가 발생했습니다.");
@@ -346,73 +325,104 @@
         // 3. 메인 분석 실행
         async function executeAnalysis() {
             try {
-                let mergedData = {};
-
+                let filesToProcess = [];
+                
                 if (currentMode === 'single') {
                     const fileInput = document.getElementById('file-0');
                     if (!fileInput.files.length) return alert("엑셀 파일을 업로드해주세요.");
-                    mergedData = await readExcelFile(fileInput.files[0]);
+                    // 단일 고사는 비율 100%(1)로 반영
+                    filesToProcess.push({ file: fileInput.files[0], weight: 1 });
                 } else {
                     if (!checkWeights()) return alert("평가 항목의 비율 합계를 100%로 맞춰주세요.");
-                    
-                    let tempDB = {}; 
-                    
                     for (let i = 0; i < evalList.length; i++) {
                         const fileInput = document.getElementById(`file-${i}`);
-                        if (!fileInput.files.length) continue; 
-                        
-                        const fileData = await readExcelFile(fileInput.files[0]);
-                        if(!fileData) continue;
-
-                        const weight = evalList[i].weight / 100;
-                        
-                        Object.keys(fileData).forEach(className => {
-                            if (!tempDB[className]) tempDB[className] = {}; 
-                            
-                            fileData[className].forEach(student => {
-                                if (student.score === 'EXCLUDE') {
-                                    // 한 번이라도 자퇴/전출이면 최종 결과에서도 아예 제외
-                                    tempDB[className][student.num] = 'EXCLUDE';
-                                } else if (tempDB[className][student.num] !== 'EXCLUDE') {
-                                    if (tempDB[className][student.num] === undefined) {
-                                        tempDB[className][student.num] = 0;
-                                    }
-                                    tempDB[className][student.num] += (student.score * weight);
-                                }
-                            });
-                        });
+                        if (fileInput && fileInput.files.length > 0) {
+                            // 100점 만점 기준이므로 입력한 %를 100으로 나누어 곱함 (예: 40% -> 0.4)
+                            filesToProcess.push({ file: fileInput.files[0], weight: evalList[i].weight / 100 });
+                        }
                     }
+                    if (filesToProcess.length === 0) return alert("최소 1개 이상의 엑셀 파일을 업로드해주세요.");
+                }
 
-                    Object.keys(tempDB).forEach(className => {
-                        mergedData[className] = Object.keys(tempDB[className]).map(num => ({
-                            num: parseInt(num),
-                            score: tempDB[className][num]
-                        }));
+                let masterDB = {}; 
+                
+                // 각 파일별 데이터 누적
+                for (let f of filesToProcess) {
+                    const fileData = await readExcelFile(f.file);
+                    if (!fileData) continue;
+
+                    Object.keys(fileData).forEach(className => {
+                        if (!masterDB[className]) masterDB[className] = {}; 
+                        
+                        Object.keys(fileData[className]).forEach(numStr => {
+                            let studentNum = parseInt(numStr);
+                            let rawVal = fileData[className][numStr];
+                            
+                            if (!masterDB[className][studentNum]) {
+                                masterDB[className][studentNum] = {
+                                    num: studentNum,
+                                    totalScore: 0,
+                                    isDrop: false,
+                                    hasData: false
+                                };
+                            }
+                            
+                            let stu = masterDB[className][studentNum];
+                            
+                            // [규칙 적용 1] 학적 변동자(자퇴/전출/제적/유예)가 단 하나라도 있으면 무조건 최종 제외(Drop)
+                            if (rawVal.includes("자퇴") || rawVal.includes("전출") || rawVal.includes("제적") || rawVal.includes("유예")) {
+                                stu.isDrop = true;
+                            }
+                            
+                            // [규칙 적용 2] 결번이나 빈칸이 아닌 데이터(결시, 0점, 미인정결, 점수 등)가 한 번이라도 있으면 살아있는 학생으로 간주 (인원수 포함)
+                            if (rawVal !== "" && rawVal !== "-" && !rawVal.includes("결번")) {
+                                stu.hasData = true;
+                            }
+                            
+                            // [합산 점수 오류 해결] 
+                            // '결시' 등 문자는 parseFloat 시 NaN이 되어 무시됨 (= 0점 처리와 동일)
+                            let parsedScore = parseFloat(rawVal);
+                            if (!isNaN(parsedScore)) {
+                                // 100점 만점 점수에 비율을 곱해서 누적 
+                                stu.totalScore += (parsedScore * f.weight);
+                                // 부동소수점 오차(예: 39.9999999) 방지를 위해 매 계산마다 소수점 4자리에서 반올림 처리
+                                stu.totalScore = Math.round(stu.totalScore * 10000) / 10000;
+                            }
+                        });
                     });
                 }
 
-                if (!mergedData || Object.keys(mergedData).length === 0) {
-                    return alert("분석할 유효한 데이터가 없습니다. 양식을 다시 확인해주세요.");
-                }
-
-                // [핵심] 자퇴/전출(EXCLUDE) 마커가 있는 학생만 인원수에서 완벽히 제외, 결시 등 0점은 유지
-                Object.keys(mergedData).forEach(className => {
-                    mergedData[className] = mergedData[className].filter(student => student.score !== 'EXCLUDE');
-                    // 만약 특정 반에 유효 인원이 0명이면 해당 반 키 자체를 삭제
-                    if (mergedData[className].length === 0) {
-                        delete mergedData[className];
+                // 최종 유효 데이터 필터링 및 결과 포맷팅
+                let mergedData = {};
+                Object.keys(masterDB).forEach(className => {
+                    let students = [];
+                    Object.values(masterDB[className]).forEach(stu => {
+                        // 자퇴/전출 기록이 한 번도 없고, 실제 응시 데이터(결시 포함)가 한 번이라도 있는 학생만 최종 인원에 포함!
+                        if (!stu.isDrop && stu.hasData) {
+                            students.push({
+                                num: stu.num,
+                                // UI 출력 및 등급 계산을 위해 최종적으로 소수점 둘째 자리로 확정
+                                score: Number(stu.totalScore.toFixed(2))
+                            });
+                        }
+                    });
+                    
+                    if (students.length > 0) {
+                        students.sort((a, b) => a.num - b.num);
+                        mergedData[className] = students;
                     }
                 });
 
-                if (Object.keys(mergedData).length === 0) {
-                    return alert("분석 결과 모든 학생이 자퇴, 전출 등으로 제외되어 분석할 데이터가 없습니다.");
+                if (!mergedData || Object.keys(mergedData).length === 0) {
+                    return alert("분석할 유효한 데이터가 없습니다. 양식을 다시 확인해주세요.");
                 }
 
                 parsedData = mergedData;
                 calculateAndRender();
 
             } catch (error) {
-                alert(error);
+                console.error(error);
+                alert("오류가 발생했습니다: " + error);
             }
         }
 
@@ -424,9 +434,9 @@
             });
             allScores.sort((a, b) => b - a);
             
-            const totalCount = allScores.length; // 빈칸, 자퇴 등이 완벽히 제외된 "순수 유효 응시 인원"
+            const totalCount = allScores.length; 
             
-            if (totalCount === 0) return; // 에러 방지
+            if (totalCount === 0) return; 
 
             const avg = allScores.reduce((a, b) => a + b, 0) / totalCount;
             const variance = allScores.reduce((a, b) => a + Math.pow(b - avg, 2), 0) / totalCount;
@@ -448,7 +458,6 @@
             ratios.forEach((ratio, idx) => {
                 const targetCount = Math.round(totalCount * ratio);
                 const cutIdx = Math.min(targetCount - 1, allScores.length - 1);
-                // 인원수가 적을 때를 대비한 안전 장치
                 const cutScore = cutIdx >= 0 && cutIdx < allScores.length ? allScores[cutIdx] : 0;
                 
                 currentCuts.push({
@@ -568,7 +577,6 @@
             let targetStudents = [];
             Object.keys(parsedData).forEach(className => {
                 parsedData[className].forEach(student => {
-                    // 점수 조건에 맞고, 동점자 처리 등으로 인해 인원이 잘리는 것을 방지하기 위해 등급 컷 로직 보완
                     if (student.score >= lowerBound && student.score < upperBound) {
                         targetStudents.push({ cls: className, num: student.num, score: student.score });
                     }
