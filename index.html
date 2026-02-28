@@ -34,7 +34,7 @@
             <div>
                 <span class="inline-block bg-emerald-100 text-emerald-700 text-xs font-bold px-2 py-1 rounded mb-2">GitHub Pages 완벽 호환</span>
                 <h1 class="text-3xl font-black text-slate-900 tracking-tight">성적 통합 분석 시스템</h1>
-                <p class="text-slate-500 mt-1">서버 없이 브라우저에서 100% 안전하게 구동됩니다.</p>
+                <p class="text-slate-500 mt-1">절대좌표 파싱 엔진 적용 (어긋남 방지)</p>
             </div>
             <div class="flex gap-2 no-print">
                 <button onclick="window.print()" id="btn-print" class="hidden px-4 py-2 bg-white border border-slate-300 rounded-lg text-sm font-bold shadow-sm hover:bg-slate-50">🖨️ PDF 리포트</button>
@@ -80,7 +80,7 @@
                         <div>
                             <div class="flex justify-between items-end mb-2">
                                 <label class="block text-sm font-bold text-slate-700">엑셀 데이터 업로드</label>
-                                <span class="text-[10px] text-slate-400">양식: 5행 반, 6행 점수, A열 번호</span>
+                                <span class="text-[10px] text-slate-400">5행 반, 6행~ 점수, A열 번호</span>
                             </div>
                             <div id="file-inputs" class="space-y-3"></div>
                         </div>
@@ -229,7 +229,7 @@
             return sum === 100;
         }
 
-        // 2. 엑셀 파싱 로직 (요청하신 규칙 적용 완료)
+        // 2. 엑셀 파싱 로직 (절대 좌표 매핑 방식 적용)
         function readExcelFile(file) {
             return new Promise((resolve, reject) => {
                 if (!file) return resolve(null);
@@ -239,52 +239,88 @@
                         const data = new Uint8Array(e.target.result);
                         const workbook = XLSX.read(data, { type: 'array' });
                         const sheet = workbook.Sheets[workbook.SheetNames[0]];
-                        const json = XLSX.utils.sheet_to_json(sheet, { header: 1 }); // 2차원 배열 형태
+                        
+                        if (!sheet['!ref']) return reject("데이터가 없는 엑셀 파일입니다.");
+                        
+                        // 시트의 전체 범위 (A1 ~ 마지막 셀)
+                        const range = XLSX.utils.decode_range(sheet['!ref']);
                         
                         let classData = {};
+                        let classCols = {}; // 열 번호(c) -> 반 이름(className) 매핑용
                         
-                        // 사용자가 지정한 규칙
-                        const headerRowIdx = 4; // 5행 (자바스크립트 배열은 0부터 시작하므로 4)
-                        const startDataRowIdx = 5; // 6행부터 데이터 시작 (배열 인덱스 5)
-
-                        // 데이터가 충분하지 않은 경우 예외 처리
-                        if (json.length <= startDataRowIdx) {
-                            return reject("데이터가 부족합니다. 5행에 반 번호, 6행부터 점수가 있어야 합니다.");
-                        }
-
-                        // 5행(headerRowIdx)의 각 열(B열부터, 인덱스 1부터)을 순회하며 반 식별
-                        for (let col = 1; col < json[headerRowIdx].length; col++) {
-                            let className = String(json[headerRowIdx][col] || '').trim();
-                            if (!className || className === 'undefined') continue; // 비어있는 열 통과
-                            
-                            let students = [];
-                            
-                            // 6행(startDataRowIdx)부터 아래로 순회하며 점수 읽기
-                            for (let row = startDataRowIdx; row < json.length; row++) {
-                                let aColValue = String(json[row][0] || '').trim(); // A열 (학생 번호 또는 종료 조건)
-                                
-                                // 종료 조건: A열에 "응시생수"가 포함되어 있으면 데이터 읽기 중단
-                                if (aColValue.includes("응시생수")) {
-                                    break; 
-                                }
-
-                                let num = parseInt(aColValue); // 학생 번호
-                                let score = parseFloat(json[row][col]); // 해당 반의 점수
-                                
-                                // 번호와 점수가 모두 정상적인 숫자일 때만 저장
-                                if (!isNaN(num) && !isNaN(score)) {
-                                    students.push({ num: num, score: score });
+                        // [규칙 1] 5행 (엑셀 r:4)에서 B열 (c:1)부터 우측으로 반 번호 읽기
+                        for (let c = 1; c <= range.e.c; c++) {
+                            let cellAddr = XLSX.utils.encode_cell({ r: 4, c: c }); // ex: B5, C5, D5
+                            let cell = sheet[cellAddr];
+                            if (cell && cell.v !== undefined && cell.v !== null) {
+                                let className = String(cell.v).trim();
+                                if (className !== '') {
+                                    classCols[c] = className;
+                                    classData[className] = {}; // 학생 번호를 Key로 덮어쓰기 위해 객체로 관리
                                 }
                             }
-                            
-                            // 해당 반에 학생 데이터가 1명이라도 있으면 추가
-                            if (students.length > 0) {
-                                classData[className] = students;
+                        }
+
+                        if (Object.keys(classCols).length === 0) {
+                            return reject("5행에서 반 번호를 찾을 수 없습니다. 양식을 확인해주세요.");
+                        }
+
+                        // [규칙 2] A열 (c:0)에서 6행 (r:5)부터 아래로 내려가며 "응시생수"가 있는 마지막 행(endRow) 찾기
+                        let endRowIdx = range.e.r;
+                        for (let r = 5; r <= range.e.r; r++) {
+                            let cellAddr = XLSX.utils.encode_cell({ r: r, c: 0 }); // ex: A6, A7
+                            let cell = sheet[cellAddr];
+                            if (cell && cell.v !== undefined) {
+                                let val = String(cell.v).trim();
+                                if (val.includes("응시생수")) {
+                                    endRowIdx = r - 1; // "응시생수" 바로 위까지만 읽도록 설정
+                                    break;
+                                }
                             }
                         }
-                        resolve(classData);
+
+                        // [규칙 3] 6행 (r:5)부터 마지막 행(endRow)까지 학생 번호와 각 반의 점수 읽기
+                        for (let r = 5; r <= endRowIdx; r++) {
+                            // A열에서 해당 행의 학생 번호 읽기
+                            let aCellAddr = XLSX.utils.encode_cell({ r: r, c: 0 }); // ex: A12
+                            let aCell = sheet[aCellAddr];
+                            
+                            if (!aCell || aCell.v === undefined) continue; // A열이 비어있으면 스킵
+                            
+                            let studentNum = parseInt(String(aCell.v).trim());
+                            if (isNaN(studentNum)) continue; // A열 값이 정상적인 숫자가 아니면 스킵
+
+                            // 등록된 반들의 열(C)을 순회하며 점수 추출
+                            for (let c in classCols) {
+                                let className = classCols[c]; // 해당 열의 반 이름 (ex: C5셀에서 읽어둔 값)
+                                let scoreCellAddr = XLSX.utils.encode_cell({ r: r, c: parseInt(c) }); // ex: C12
+                                let scoreCell = sheet[scoreCellAddr];
+                                
+                                if (scoreCell && scoreCell.v !== undefined) {
+                                    let score = parseFloat(scoreCell.v);
+                                    if (!isNaN(score)) {
+                                        // "해당 반"의 "해당 번호"에 점수 저장 (중복 번호 덮어쓰기 방지)
+                                        classData[className][studentNum] = { num: studentNum, score: score };
+                                    }
+                                }
+                            }
+                        }
+
+                        // 정리된 객체를 분석에 사용할 배열 형태로 변환
+                        let finalData = {};
+                        for (let className in classData) {
+                            let studentsArray = Object.values(classData[className]);
+                            if (studentsArray.length > 0) {
+                                // 출력 시 보기 좋게 번호 순서대로 정렬
+                                studentsArray.sort((a, b) => a.num - b.num);
+                                finalData[className] = studentsArray;
+                            }
+                        }
+
+                        resolve(finalData);
                     } catch (err) {
-                        reject("엑셀 파일을 읽는 중 오류가 발생했습니다. 양식을 확인해주세요.");
+                        console.error(err);
+                        reject("엑셀 파일을 읽는 중 오류가 발생했습니다.");
                     }
                 };
                 reader.onerror = () => reject("파일 읽기 실패");
@@ -292,7 +328,7 @@
             });
         }
 
-        // 3. 메인 분석 실행
+        // 3. 메인 분석 실행 (학기말 통합 시 '반'과 '번호' 정확히 매칭)
         async function executeAnalysis() {
             try {
                 let mergedData = {};
@@ -315,15 +351,21 @@
 
                         const weight = evalList[i].weight / 100;
                         
+                        // [핵심] 여러 파일의 성적을 합산할 때 '반 이름'과 '학생 번호'를 고유 Key로 사용하여 정확히 누적
                         Object.keys(fileData).forEach(className => {
-                            if (!tempDB[className]) tempDB[className] = {};
+                            if (!tempDB[className]) tempDB[className] = {}; // 반 객체 생성
+                            
                             fileData[className].forEach(student => {
-                                if (!tempDB[className][student.num]) tempDB[className][student.num] = 0;
+                                if (!tempDB[className][student.num]) {
+                                    tempDB[className][student.num] = 0; // 해당 학생 번호가 처음이면 0점으로 초기화
+                                }
+                                // 반영 비율(weight)을 곱해서 점수 누적 합산
                                 tempDB[className][student.num] += (student.score * weight);
                             });
                         });
                     }
 
+                    // 학기말 합산이 끝난 tempDB를 배열로 변환
                     Object.keys(tempDB).forEach(className => {
                         mergedData[className] = Object.keys(tempDB[className]).map(num => ({
                             num: parseInt(num),
@@ -333,7 +375,7 @@
                 }
 
                 if (!mergedData || Object.keys(mergedData).length === 0) {
-                    return alert("분석할 유효한 데이터가 없습니다. 지정된 엑셀 파일 형식(5행 반, A열 번호 등)이 맞는지 확인해주세요.");
+                    return alert("분석할 유효한 데이터가 없습니다. 엑셀 파일 양식(5행 반, A열 번호)을 확인해주세요.");
                 }
 
                 parsedData = mergedData;
