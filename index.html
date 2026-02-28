@@ -3,13 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>All-in-One 통합 성적 및 등급 계산기 (절대 방어판)</title>
+    <title>All-in-One 통합 성적 및 등급 계산기</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- xlsx 파일 파싱을 위한 SheetJS 라이브러리 추가 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         body { font-family: 'Pretendard', sans-serif; background-color: #f3f4f6; }
-        .fade-in { animation: fadeIn 0.5s ease-in; }
+        .fade-in { animation: fadeIn 0.4s ease-in; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        /* 테이블 헤더 고정용 클래스 */
+        .sticky-header th { position: sticky; top: 0; background-color: #f9fafb; z-index: 10; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
     </style>
 </head>
 <body class="p-4 md:p-8">
@@ -17,11 +21,11 @@
         <!-- 헤더 -->
         <div class="bg-gradient-to-r from-blue-800 to-indigo-900 p-6 text-white flex justify-between items-center">
             <div>
-                <h1 class="text-3xl font-bold"><i class="fas fa-shield-alt text-yellow-400 mr-2"></i> 통합 성적/등급 계산기 (궁극 파싱판)</h1>
-                <p class="mt-2 text-blue-200">글자가 깨져도, 줄 번호가 달라도 완벽하게 추적하여 산출합니다.</p>
+                <h1 class="text-3xl font-bold"><i class="fas fa-calculator text-yellow-400 mr-2"></i> 통합 성적/등급 계산기</h1>
+                <p class="mt-2 text-blue-200">항목을 자유롭게 추가하고 나이스 엑셀 파일(.xlsx, .csv)을 업로드하세요.</p>
             </div>
             <div class="hidden md:block">
-                <span class="bg-yellow-400 text-blue-900 text-xs font-black px-3 py-1 rounded-full">v3.0 불사조 모드 적용</span>
+                <span class="bg-yellow-400 text-blue-900 text-xs font-black px-3 py-1 rounded-full">스마트 파싱 & 엑셀 지원 엔진</span>
             </div>
         </div>
 
@@ -39,56 +43,18 @@
 
             <!-- 파일 및 비율 입력 섹션 -->
             <div class="bg-gray-50 rounded-xl p-6 mb-8 border border-gray-200 shadow-inner">
-                <h2 class="text-lg font-bold text-gray-800 mb-4"><i class="fas fa-file-excel text-green-600 mr-2"></i> 성적 파일 업로드 (나이스 다운로드 CSV 원본)</h2>
-                <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
-                    <!-- 1회고사 -->
-                    <div class="bg-white border rounded-lg p-4 shadow-sm hover:shadow-md transition">
-                        <label class="font-bold text-gray-700 block mb-2">1회고사 <span class="text-xs text-gray-400 font-normal">(지필)</span></label>
-                        <div class="flex items-center mb-3">
-                            <input type="number" id="w0" value="35" class="w-16 border-b-2 border-blue-500 bg-gray-50 px-2 py-1 text-center font-bold text-blue-700 focus:outline-none">
-                            <span class="ml-1 text-gray-500 font-bold">%</span>
-                        </div>
-                        <input type="file" id="f0" accept=".csv" class="text-xs w-full cursor-pointer file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
-                    </div>
-                    <!-- 2회고사 -->
-                    <div class="bg-white border rounded-lg p-4 shadow-sm hover:shadow-md transition">
-                        <label class="font-bold text-gray-700 block mb-2">2회고사 <span class="text-xs text-gray-400 font-normal">(지필)</span></label>
-                        <div class="flex items-center mb-3">
-                            <input type="number" id="w1" value="35" class="w-16 border-b-2 border-blue-500 bg-gray-50 px-2 py-1 text-center font-bold text-blue-700 focus:outline-none">
-                            <span class="ml-1 text-gray-500 font-bold">%</span>
-                        </div>
-                        <input type="file" id="f1" accept=".csv" class="text-xs w-full cursor-pointer file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
-                    </div>
-                    <!-- 주통 -->
-                    <div class="bg-white border rounded-lg p-4 shadow-sm hover:shadow-md transition">
-                        <label class="font-bold text-gray-700 block mb-2">주통 <span class="text-xs text-gray-400 font-normal">(수행)</span></label>
-                        <div class="flex items-center mb-3">
-                            <input type="number" id="w2" value="15" class="w-16 border-b-2 border-blue-500 bg-gray-50 px-2 py-1 text-center font-bold text-blue-700 focus:outline-none">
-                            <span class="ml-1 text-gray-500 font-bold">%</span>
-                        </div>
-                        <input type="file" id="f2" accept=".csv" class="text-xs w-full cursor-pointer file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
-                    </div>
-                    <!-- 구술 -->
-                    <div class="bg-white border rounded-lg p-4 shadow-sm hover:shadow-md transition">
-                        <label class="font-bold text-gray-700 block mb-2">구술 <span class="text-xs text-gray-400 font-normal">(수행)</span></label>
-                        <div class="flex items-center mb-3">
-                            <input type="number" id="w3" value="10" class="w-16 border-b-2 border-blue-500 bg-gray-50 px-2 py-1 text-center font-bold text-blue-700 focus:outline-none">
-                            <span class="ml-1 text-gray-500 font-bold">%</span>
-                        </div>
-                        <input type="file" id="f3" accept=".csv" class="text-xs w-full cursor-pointer file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
-                    </div>
-                    <!-- 에세이 -->
-                    <div class="bg-white border rounded-lg p-4 shadow-sm hover:shadow-md transition">
-                        <label class="font-bold text-gray-700 block mb-2">에세이 <span class="text-xs text-gray-400 font-normal">(수행)</span></label>
-                        <div class="flex items-center mb-3">
-                            <input type="number" id="w4" value="5" class="w-16 border-b-2 border-blue-500 bg-gray-50 px-2 py-1 text-center font-bold text-blue-700 focus:outline-none">
-                            <span class="ml-1 text-gray-500 font-bold">%</span>
-                        </div>
-                        <input type="file" id="f4" accept=".csv" class="text-xs w-full cursor-pointer file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
-                    </div>
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-lg font-bold text-gray-800"><i class="fas fa-list-check text-blue-600 mr-2"></i> 평가 항목 설정</h2>
+                    <button onclick="addEvalRow()" class="bg-blue-100 hover:bg-blue-200 text-blue-700 text-sm font-bold py-1.5 px-3 rounded transition flex items-center">
+                        <i class="fas fa-plus mr-1"></i> 항목 추가
+                    </button>
+                </div>
+                
+                <div id="evalContainer" class="space-y-3">
+                    <!-- 항목이 동적 렌더링 됨 -->
                 </div>
 
-                <div class="mt-6 flex justify-center">
+                <div class="mt-8 flex justify-center border-t pt-6 border-gray-200">
                     <button onclick="executeAllInOne()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-12 rounded-full shadow-lg transition transform hover:-translate-y-1 text-lg flex items-center">
                         <i class="fas fa-rocket mr-2"></i> 성적 합산 및 등급 컷 계산
                     </button>
@@ -110,11 +76,11 @@
                     
                     <div class="bg-white border border-red-100 rounded-xl shadow-md p-6 relative overflow-hidden">
                         <div class="absolute right-0 top-0 w-24 h-24 bg-red-50 rounded-bl-full z-0"></div>
-                        <div class="relative z-10 flex justify-between items-start">
-                            <div>
-                                <p class="text-sm text-gray-500 font-bold mb-1">자동 제외 대상자 (자퇴/전출 등)</p>
+                        <div class="relative z-10 flex justify-between items-start w-full">
+                            <div class="w-full">
+                                <p class="text-sm text-gray-500 font-bold mb-1">자동 제외 대상자 (자퇴/결시 등)</p>
                                 <p class="text-4xl font-black text-red-500" id="dropCount">- 명</p>
-                                <div id="dropNames" class="mt-2 text-sm text-red-600 font-medium bg-red-50 p-2 rounded-lg border border-red-100 inline-block max-h-20 overflow-y-auto"></div>
+                                <div id="dropNames" class="mt-2 text-sm text-red-600 font-medium bg-red-50 p-2 rounded-lg border border-red-100 inline-block max-h-24 overflow-y-auto w-full break-words"></div>
                             </div>
                             <i class="fas fa-user-times text-4xl text-red-200"></i>
                         </div>
@@ -124,12 +90,12 @@
                 <!-- 등급컷 및 반별 분포 그리드 -->
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     <!-- 9등급 커트라인 -->
-                    <div class="lg:col-span-1 bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
+                    <div class="lg:col-span-1 bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden flex flex-col">
                         <div class="bg-indigo-50 px-6 py-4 border-b border-gray-200">
-                            <h3 class="text-lg font-bold text-indigo-900"><i class="fas fa-trophy mr-2 text-indigo-600"></i>9등급 커트라인 (100점 만점)</h3>
+                            <h3 class="text-lg font-bold text-indigo-900"><i class="fas fa-trophy mr-2 text-indigo-600"></i>9등급 커트라인</h3>
                         </div>
-                        <div class="overflow-x-auto">
-                            <table class="min-w-full divide-y divide-gray-200 text-center">
+                        <div class="overflow-x-auto flex-grow">
+                            <table class="min-w-full divide-y divide-gray-200 text-center h-full">
                                 <thead class="bg-gray-50">
                                     <tr>
                                         <th class="px-4 py-3 text-xs font-bold text-gray-500 uppercase">등급</th>
@@ -144,12 +110,11 @@
                     </div>
 
                     <!-- 반별 등급 분포도 -->
-                    <div class="lg:col-span-2 bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
-                        <div class="bg-green-50 px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                    <div class="lg:col-span-2 bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden flex flex-col">
+                        <div class="bg-green-50 px-6 py-4 border-b border-gray-200">
                             <h3 class="text-lg font-bold text-green-900"><i class="fas fa-th mr-2 text-green-600"></i>반별 등급 분포도</h3>
-                            <span class="text-xs text-green-700 bg-green-100 px-2 py-1 rounded-full font-bold">성공적 맵핑 완표</span>
                         </div>
-                        <div class="overflow-x-auto p-4">
+                        <div class="overflow-x-auto p-4 flex-grow flex items-center">
                             <table class="min-w-full divide-y divide-gray-300 text-center border">
                                 <thead class="bg-gray-100">
                                     <tr>
@@ -172,14 +137,35 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- (신규) 학생별 성적 상세 내역 (점수 검증용) -->
+                <div class="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden mt-8">
+                    <div class="bg-gray-800 px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                        <h3 class="text-lg font-bold text-white"><i class="fas fa-search-plus mr-2 text-yellow-400"></i>학생별 성적 상세 내역</h3>
+                        <span class="text-gray-300 text-sm">※ 점수 계산 검증 및 확인용</span>
+                    </div>
+                    <div class="overflow-x-auto max-h-[600px] overflow-y-auto">
+                        <table class="min-w-full divide-y divide-gray-200 text-center text-sm">
+                            <thead class="sticky-header" id="detailTableHeader">
+                                <!-- JS로 동적 렌더링 됨 -->
+                            </thead>
+                            <tbody id="detailTableBody" class="bg-white divide-y divide-gray-200">
+                                <!-- JS로 동적 렌더링 됨 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
             </div>
         </div>
     </div>
 
     <script>
-        // 학적 변동 제외 키워드 (미인정결석 등은 0점 처리되도록 제외 키워드에서 뺐습니다)
+        // 학적 변동 및 결시 제외 키워드
         const DROP_KEYWORDS = ['자퇴', '전출', '제적', '유예', '면제', '위탁'];
-        
+        let rowCount = 0;
+
+        // UI 에러 메시지 처리
         function showError(msg) {
             const errDiv = document.getElementById('errorMessage');
             document.getElementById('errorText').innerText = msg;
@@ -190,38 +176,94 @@
             document.getElementById('errorMessage').classList.add('hidden');
         }
 
-        // 인코딩 보완 CSV 읽기
-        async function readCSV(file) {
+        // 동적 평가 항목 행 추가 (.xlsx 파일 지원 추가)
+        function addEvalRow(defaultName = "", defaultWeight = "") {
+            rowCount++;
+            const container = document.getElementById('evalContainer');
+            const nameValue = defaultName || `평가항목 ${rowCount}`;
+            
+            const rowDiv = document.createElement('div');
+            rowDiv.className = "eval-row bg-white border border-gray-200 rounded-lg p-3 shadow-sm flex flex-col md:flex-row md:items-center gap-3 fade-in";
+            
+            rowDiv.innerHTML = `
+                <div class="flex-1 flex items-center gap-2">
+                    <span class="text-gray-400 font-bold"><i class="fas fa-bars"></i></span>
+                    <input type="text" value="${nameValue}" class="eval-name w-full md:w-40 border-b-2 border-gray-300 bg-transparent px-2 py-1 font-bold text-gray-700 focus:outline-none focus:border-indigo-500" placeholder="항목명 (예: 1회고사)">
+                </div>
+                <div class="flex items-center gap-2">
+                    <label class="text-sm font-bold text-gray-600">비율:</label>
+                    <input type="number" value="${defaultWeight}" class="eval-weight w-16 border-b-2 border-blue-500 bg-gray-50 px-2 py-1 text-center font-bold text-blue-700 focus:outline-none" placeholder="0">
+                    <span class="text-gray-500 font-bold">%</span>
+                </div>
+                <div class="flex-grow">
+                    <input type="file" accept=".xlsx, .xls, .csv" class="eval-file w-full text-sm cursor-pointer file:mr-2 file:py-1 file:px-3 file:rounded-full file:border-0 file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+                </div>
+                <div class="flex-shrink-0">
+                    <button onclick="this.closest('.eval-row').remove()" class="text-red-400 hover:text-red-600 p-2 rounded-full hover:bg-red-50 transition" title="항목 삭제">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                </div>
+            `;
+            container.appendChild(rowDiv);
+        }
+
+        // 초기 화면 로드 시 기본 3개 항목 생성
+        window.onload = () => {
+            addEvalRow("1회고사", 30);
+            addEvalRow("2회고사", 30);
+            addEvalRow("수행평가", 40);
+        };
+
+        // XLSX 및 CSV 통합 파일 읽기
+        async function readFile(file) {
             return new Promise((resolve, reject) => {
+                const ext = file.name.split('.').pop().toLowerCase();
                 const reader = new FileReader();
-                reader.readAsText(file, 'euc-kr');
-                reader.onload = (e) => {
-                    let text = e.target.result;
-                    // BOM(Byte Order Mark) 제거
-                    text = text.replace(/^\uFEFF/, '');
-                    
-                    // EUC-KR로 읽었는데 한글이 심하게 깨져 '반'이나 '번호'가 없다면 UTF-8 재시도
-                    if (!text.includes('반') && !text.includes('번호') && !text.includes('평가')) {
-                        const utf8Reader = new FileReader();
-                        utf8Reader.readAsText(file, 'utf-8');
-                        utf8Reader.onload = (e2) => {
-                            resolve(e2.target.result.replace(/^\uFEFF/, ''));
-                        };
-                        utf8Reader.onerror = () => resolve(text);
-                    } else {
-                        resolve(text);
-                    }
-                };
+
+                // 엑셀 파일인 경우 SheetJS를 이용해 CSV 텍스트로 변환
+                if (ext === 'xlsx' || ext === 'xls') {
+                    reader.readAsArrayBuffer(file);
+                    reader.onload = (e) => {
+                        try {
+                            const data = new Uint8Array(e.target.result);
+                            const workbook = XLSX.read(data, { type: 'array' });
+                            const firstSheetName = workbook.SheetNames[0];
+                            const worksheet = workbook.Sheets[firstSheetName];
+                            // 엑셀 시트를 CSV 포맷 텍스트로 변환
+                            const csvText = XLSX.utils.sheet_to_csv(worksheet);
+                            resolve(csvText);
+                        } catch (err) {
+                            reject(new Error("엑셀 파일 파싱 실패: 파일이 손상되었거나 지원하지 않는 포맷입니다."));
+                        }
+                    };
+                } else {
+                    // CSV 파일인 경우 기존 텍스트 읽기 방식 적용
+                    reader.readAsText(file, 'euc-kr');
+                    reader.onload = (e) => {
+                        let text = e.target.result;
+                        text = text.replace(/^\uFEFF/, '');
+                        
+                        // 인코딩 보완 로직
+                        if (!text.includes('반') && !text.includes('번호') && !text.includes('평가')) {
+                            const utf8Reader = new FileReader();
+                            utf8Reader.readAsText(file, 'utf-8');
+                            utf8Reader.onload = (e2) => resolve(e2.target.result.replace(/^\uFEFF/, ''));
+                            utf8Reader.onerror = () => resolve(text);
+                        } else {
+                            resolve(text);
+                        }
+                    };
+                }
                 reader.onerror = () => reject(new Error("파일 읽기 실패"));
             });
         }
 
-        // 🌟 절대 실패하지 않는 궁극의 파싱 로직
-        function parseCSVData(csvText, fileName) {
+        // CSV/엑셀 텍스트 데이터를 파싱하는 스마트 엔진
+        function parseCSVData(csvText, itemName) {
             const lines = csvText.replace(/\r/g, '').split('\n');
             let isDataRow = false;
             let classColumns = [];
-            let data = {}; // { classNum: { stuNum: rawValue } }
+            let data = {};
             let headerFound = false;
 
             for (let i = 0; i < lines.length; i++) {
@@ -230,48 +272,38 @@
 
                 let cols = line.split(',').map(c => c.replace(/"/g, '').trim()); 
                 let firstCol = cols[0] || '';
-
-                // 한글과 영문, 숫자만 남겨서 특수문자/공백/깨짐 방지
                 let cleanFirst = firstCol.replace(/[^가-힣0-9a-zA-Z]/g, '');
 
-                // 헤더를 찾는 2가지 방법 (1. 글자로 찾기 2. 숫자의 연속성으로 찾기)
                 if (!isDataRow) {
                     let isHeader = false;
-                    
-                    // 방법 1: 글자로 인식
                     if (cleanFirst.includes('반') || cleanFirst.includes('번호')) {
                         isHeader = true;
-                    } 
-                    // 방법 2: 글자가 깨졌더라도, 1, 2, 3, 4 반 숫자가 연속으로 적혀있는 행이면 헤더로 강제 인식
-                    else {
+                    } else {
                         let consecutiveNumbers = 0;
                         for (let c = 1; c <= Math.min(cols.length - 1, 7); c++) {
                             if (cols[c] && cols[c].replace(/[^0-9]/g, '') === String(c)) {
                                 consecutiveNumbers++;
                             }
                         }
-                        if (consecutiveNumbers >= 3) isHeader = true; // 최소 3개반 이상 숫자가 맞으면 통과
+                        if (consecutiveNumbers >= 3) isHeader = true;
                     }
 
-                    // 헤더(반번호 행)를 찾았을 때
                     if (isHeader) {
                         isDataRow = true;
                         headerFound = true;
                         
-                        // 각 열이 몇 반인지 맵핑
                         for (let c = 1; c < cols.length; c++) {
                             let classNum = cols[c].replace(/[^0-9]/g, ''); 
                             if (classNum !== '') {
                                 classColumns.push({ index: c, classNum: classNum });
                             }
                         }
-                        continue; // 헤더 행 자체는 학생 점수가 아니므로 다음 줄로 넘어감
+                        continue;
                     }
                 }
 
-                // 헤더를 찾은 이후의 줄들 (실제 학생 데이터 파싱)
                 if (isDataRow) {
-                    let cleanStudentNumStr = firstCol.replace(/[^0-9]/g, ''); // 학생 번호 (숫자만 추출)
+                    let cleanStudentNumStr = firstCol.replace(/[^0-9]/g, ''); 
                     
                     if (cleanStudentNumStr !== '') {
                         let studentNum = parseInt(cleanStudentNumStr);
@@ -287,7 +319,7 @@
             }
 
             if (!headerFound || classColumns.length === 0) {
-                throw new Error(`[${fileName}] 파일에서 학생 성적 표를 인식하지 못했습니다. 원본 CSV 파일이 맞는지 확인해주세요.`);
+                throw new Error(`[${itemName}] 항목의 파일에서 성적 표(반/번호 헤더)를 찾을 수 없습니다. 양식이 올바른지 확인해주세요.`);
             }
 
             return data;
@@ -298,36 +330,43 @@
             document.getElementById('resultsArea').classList.add('hidden');
 
             try {
-                let evals = [];
-                let totalWeight = 0;
-                const testNames = ['1회고사', '2회고사', '주통', '구술', '에세이'];
+                const rows = document.querySelectorAll('.eval-row');
+                if (rows.length === 0) return showError("평가 항목을 최소 1개 이상 추가해주세요.");
 
-                for (let i = 0; i < 5; i++) {
-                    const fileInput = document.getElementById(`f${i}`);
-                    const weightInput = document.getElementById(`w${i}`);
+                let evals = [];
+                let evalNamesOrdered = [];
+                let totalWeight = 0;
+
+                for (let i = 0; i < rows.length; i++) {
+                    const name = rows[i].querySelector('.eval-name').value || `항목 ${i+1}`;
+                    const weightInput = rows[i].querySelector('.eval-weight').value;
+                    const fileInput = rows[i].querySelector('.eval-file');
                     
                     if (!fileInput.files.length) {
-                        return showError(`${testNames[i]} 엑셀 파일(.csv)을 업로드해주세요.`);
+                        return showError(`[${name}] 항목의 성적 파일(.xlsx 또는 .csv)을 업로드해주세요.`);
                     }
                     
-                    let weight = parseFloat(weightInput.value);
-                    if (isNaN(weight) || weight < 0) return showError("반영 비율은 올바른 숫자여야 합니다.");
+                    let weight = parseFloat(weightInput);
+                    if (isNaN(weight) || weight < 0) return showError(`[${name}]의 반영 비율이 올바르지 않습니다.`);
                     
                     totalWeight += weight;
-                    evals.push({ weight: weight, file: fileInput.files[0] });
+                    evals.push({ name: name, weight: weight, file: fileInput.files[0] });
+                    evalNamesOrdered.push({ name: name, weight: weight });
                 }
 
                 if (Math.abs(totalWeight - 100) > 0.1) {
                     return showError(`반영 비율의 합이 100%가 아닙니다. 현재 합계: ${totalWeight}%`);
                 }
 
+                // 파일 읽기 및 파싱
                 let parsedFiles = [];
                 for (let ev of evals) {
-                    let text = await readCSV(ev.file);
-                    let data = parseCSVData(text, ev.file.name);
-                    parsedFiles.push({ data: data, weight: ev.weight });
+                    let text = await readFile(ev.file); // xlsx, csv 모두 읽어내는 함수
+                    let data = parseCSVData(text, ev.name);
+                    parsedFiles.push({ name: ev.name, data: data, weight: ev.weight });
                 }
 
+                // 학생 데이터 병합 (상세 점수 포함)
                 let masterDB = {}; 
                 
                 parsedFiles.forEach((pf) => {
@@ -342,11 +381,14 @@
                                     classNum: parseInt(cNum), 
                                     stuNum: parseInt(sNum), 
                                     totalScore: 0, 
+                                    scores: {}, // 원본 텍스트/점수 저장
+                                    weightedScores: {}, // 반영 비율이 적용된 환산점수 저장
                                     isDrop: false, 
                                     allEmpty: true 
                                 };
                             }
 
+                            masterDB[key].scores[pf.name] = rawVal;
                             if (rawVal !== '') masterDB[key].allEmpty = false;
 
                             if (DROP_KEYWORDS.some(kw => rawVal.includes(kw))) {
@@ -355,7 +397,9 @@
 
                             let score = parseFloat(rawVal);
                             if (!isNaN(score)) {
-                                masterDB[key].totalScore += score * (pf.weight / 100);
+                                let weighted = score * (pf.weight / 100);
+                                masterDB[key].totalScore += weighted;
+                                masterDB[key].weightedScores[pf.name] = weighted;
                             }
                         }
                     }
@@ -369,7 +413,14 @@
                     if (stu.allEmpty) continue; 
                     
                     if (stu.isDrop) {
-                        dropNames.push(`${stu.classNum}반 ${stu.stuNum}번`);
+                        let reason = "";
+                        // 제외 사유 파악용
+                        for (let evalName in stu.scores) {
+                            if (DROP_KEYWORDS.some(kw => stu.scores[evalName].includes(kw))) {
+                                reason = stu.scores[evalName]; break;
+                            }
+                        }
+                        dropNames.push(`${stu.classNum}반 ${stu.stuNum}번(${reason})`);
                     } else {
                         stu.totalScore = Number(stu.totalScore.toFixed(2));
                         validStudents.push(stu);
@@ -377,18 +428,25 @@
                 }
 
                 let totalCount = validStudents.length;
-                if (totalCount === 0) return showError("점수를 계산할 학생 데이터가 없습니다. 파일의 내용이 올바른지 확인해주세요.");
+                if (totalCount === 0) return showError("점수를 계산할 유효한 학생 데이터가 없습니다.");
 
-                validStudents.sort((a, b) => b.totalScore - a.totalScore);
+                // 1차: 총점 내림차순, 2차: 반 오름차순, 3차: 번호 오름차순 정렬
+                validStudents.sort((a, b) => {
+                    if (b.totalScore !== a.totalScore) return b.totalScore - a.totalScore;
+                    if (a.classNum !== b.classNum) return a.classNum - b.classNum;
+                    return a.stuNum - b.stuNum;
+                });
+                
                 let validScoresOnly = validStudents.map(s => s.totalScore);
 
+                // 상단 요약 렌더링
                 document.getElementById('totalCount').innerHTML = `${totalCount} <span class="text-2xl font-bold">명</span>`;
                 document.getElementById('dropCount').innerText = `${dropNames.length} 명`;
                 
                 let dropNamesEl = document.getElementById('dropNames');
                 if (dropNames.length > 0) {
-                    dropNamesEl.innerText = `제외: ${dropNames.join(', ')}`;
-                    dropNamesEl.style.display = 'inline-block';
+                    dropNamesEl.innerText = `제외자 목록: ${dropNames.join(', ')}`;
+                    dropNamesEl.style.display = 'block';
                 } else {
                     dropNamesEl.style.display = 'none';
                 }
@@ -420,10 +478,11 @@
                     tbodyCuts.appendChild(tr);
                 });
 
-                // 반별 분포도 계산
+                // 반별 분포도 계산 및 학생별 등급 부여
                 let classDist = {};
                 
-                validStudents.forEach(stu => {
+                validStudents.forEach((stu, index) => {
+                    stu.rank = index + 1; // 석차 기록
                     let studentGrade = 9;
                     for (let i = 0; i < gradeCuts.length; i++) {
                         if (stu.totalScore >= gradeCuts[i].cutScore) {
@@ -431,6 +490,7 @@
                             break;
                         }
                     }
+                    stu.grade = studentGrade; // 등급 기록
 
                     if (!classDist[stu.classNum]) {
                         classDist[stu.classNum] = Array(9).fill(0);
@@ -477,6 +537,59 @@
                 footHtml += `<td class="px-3 py-3 font-black text-indigo-700 border-l">${grandTotal}</td>`;
                 footTr.innerHTML = footHtml;
                 tbodyDist.appendChild(footTr);
+
+
+                // [신규] 학생별 상세 내역 테이블 렌더링
+                const detailThead = document.getElementById('detailTableHeader');
+                const detailTbody = document.getElementById('detailTableBody');
+                
+                // 동적 헤더 생성
+                let theadHtml = `
+                    <tr>
+                        <th class="px-4 py-3 font-bold text-gray-600 bg-gray-50 border-b border-r">전체 석차</th>
+                        <th class="px-4 py-3 font-bold text-gray-600 bg-gray-50 border-b border-r">등급</th>
+                        <th class="px-4 py-3 font-bold text-gray-600 bg-gray-50 border-b border-r">소속 반</th>
+                        <th class="px-4 py-3 font-bold text-gray-600 bg-gray-50 border-b border-r">번호</th>
+                        <th class="px-4 py-3 font-black text-indigo-700 bg-indigo-50 border-b border-r">합산 총점</th>
+                `;
+                evalNamesOrdered.forEach(ev => {
+                    theadHtml += `<th class="px-4 py-3 font-bold text-gray-600 bg-gray-50 border-b">${ev.name}<br><span class="text-xs font-normal text-blue-500">원점수 (반영:${ev.weight}%)</span></th>`;
+                });
+                theadHtml += `</tr>`;
+                detailThead.innerHTML = theadHtml;
+
+                // 데이터 로우 생성
+                detailTbody.innerHTML = '';
+                validStudents.forEach((stu, index) => {
+                    let tr = document.createElement('tr');
+                    tr.className = index % 2 === 0 ? "bg-white hover:bg-yellow-50" : "bg-gray-50 hover:bg-yellow-50";
+                    
+                    let rowHtml = `
+                        <td class="px-4 py-3 font-bold text-gray-700 border-r">${stu.rank}</td>
+                        <td class="px-4 py-3 border-r"><span class="bg-indigo-100 text-indigo-800 w-6 h-6 inline-flex items-center justify-center rounded-full text-xs font-black">${stu.grade}</span></td>
+                        <td class="px-4 py-3 text-gray-600 border-r">${stu.classNum}반</td>
+                        <td class="px-4 py-3 text-gray-600 border-r">${stu.stuNum}번</td>
+                        <td class="px-4 py-3 font-black text-indigo-600 border-r text-lg bg-indigo-50/30">${stu.totalScore.toFixed(2)}</td>
+                    `;
+
+                    // 각 평가 항목별 점수 나열
+                    evalNamesOrdered.forEach(ev => {
+                        let rawStr = stu.scores[ev.name] || '-';
+                        let weightScore = stu.weightedScores[ev.name];
+                        let subHtml = `<div class="font-semibold text-gray-800">${rawStr}</div>`;
+                        
+                        if (weightScore !== undefined) {
+                            subHtml += `<div class="text-xs text-blue-500 font-bold">(${weightScore.toFixed(2)})</div>`;
+                        } else {
+                            subHtml += `<div class="text-xs text-gray-400">(-)</div>`;
+                        }
+                        rowHtml += `<td class="px-4 py-3">${subHtml}</td>`;
+                    });
+
+                    tr.innerHTML = rowHtml;
+                    detailTbody.appendChild(tr);
+                });
+
 
                 document.getElementById('resultsArea').classList.remove('hidden');
                 document.getElementById('resultsArea').scrollIntoView({ behavior: 'smooth', block: 'start' });
