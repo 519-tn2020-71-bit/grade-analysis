@@ -32,9 +32,9 @@
         <!-- 헤더 -->
         <header class="mb-10 flex flex-col md:flex-row justify-between items-start md:items-end gap-4 border-b border-slate-200 pb-6">
             <div>
-                <span class="inline-block bg-emerald-100 text-emerald-700 text-xs font-bold px-2 py-1 rounded mb-2">GitHub Pages 완벽 호환</span>
+                <span class="inline-block bg-emerald-100 text-emerald-700 text-xs font-bold px-2 py-1 rounded mb-2">데이터 클리닝 엔진 탑재</span>
                 <h1 class="text-3xl font-black text-slate-900 tracking-tight">성적 통합 분석 시스템</h1>
-                <p class="text-slate-500 mt-1">절대좌표 파싱 엔진 적용 (어긋남 방지)</p>
+                <p class="text-slate-500 mt-1">절대좌표 매핑 및 0점/자퇴/하단 통계 완벽 필터링</p>
             </div>
             <div class="flex gap-2 no-print">
                 <button onclick="window.print()" id="btn-print" class="hidden px-4 py-2 bg-white border border-slate-300 rounded-lg text-sm font-bold shadow-sm hover:bg-slate-50">🖨️ PDF 리포트</button>
@@ -101,8 +101,9 @@
                         <p id="res-avg" class="text-4xl font-black">0.00</p>
                     </div>
                     <div class="card text-center p-6">
-                        <p class="text-sm font-medium text-slate-500 mb-1">총 응시 인원</p>
+                        <p class="text-sm font-medium text-slate-500 mb-1">유효 응시 인원</p>
                         <p id="res-total" class="text-4xl font-black text-slate-800">0</p>
+                        <p class="text-[10px] text-slate-400 mt-1">(0점, 자퇴 등 제외됨)</p>
                     </div>
                     <div class="card text-center p-6">
                         <p class="text-sm font-medium text-slate-500 mb-1">표준 편차</p>
@@ -229,7 +230,7 @@
             return sum === 100;
         }
 
-        // 2. 엑셀 파싱 로직 (절대 좌표 매핑 방식 적용)
+        // 2. 엑셀 파싱 로직 (결측치 처리 및 통계행 완벽 차단)
         function readExcelFile(file) {
             return new Promise((resolve, reject) => {
                 if (!file) return resolve(null);
@@ -241,82 +242,92 @@
                         const sheet = workbook.Sheets[workbook.SheetNames[0]];
                         
                         if (!sheet['!ref']) return reject("데이터가 없는 엑셀 파일입니다.");
-                        
-                        // 시트의 전체 범위 (A1 ~ 마지막 셀)
                         const range = XLSX.utils.decode_range(sheet['!ref']);
                         
                         let classData = {};
-                        let classCols = {}; // 열 번호(c) -> 반 이름(className) 매핑용
+                        let classCols = {}; 
                         
-                        // [규칙 1] 5행 (엑셀 r:4)에서 B열 (c:1)부터 우측으로 반 번호 읽기
+                        // [규칙 1] 5행(r:4)에서 반 정보 읽기
                         for (let c = 1; c <= range.e.c; c++) {
-                            let cellAddr = XLSX.utils.encode_cell({ r: 4, c: c }); // ex: B5, C5, D5
+                            let cellAddr = XLSX.utils.encode_cell({ r: 4, c: c }); 
                             let cell = sheet[cellAddr];
                             if (cell && cell.v !== undefined && cell.v !== null) {
                                 let className = String(cell.v).trim();
                                 if (className !== '') {
                                     classCols[c] = className;
-                                    classData[className] = {}; // 학생 번호를 Key로 덮어쓰기 위해 객체로 관리
+                                    classData[className] = {}; 
                                 }
                             }
                         }
 
-                        if (Object.keys(classCols).length === 0) {
-                            return reject("5행에서 반 번호를 찾을 수 없습니다. 양식을 확인해주세요.");
-                        }
+                        if (Object.keys(classCols).length === 0) return reject("5행에서 반 번호를 찾을 수 없습니다.");
 
-                        // [규칙 2] A열 (c:0)에서 6행 (r:5)부터 아래로 내려가며 "응시생수"가 있는 마지막 행(endRow) 찾기
+                        // [규칙 2] 하단 통계행(응시생수, 평균 등)이 시작되는 행을 찾아내어 정확히 그 위까지만 자르기
                         let endRowIdx = range.e.r;
                         for (let r = 5; r <= range.e.r; r++) {
-                            let cellAddr = XLSX.utils.encode_cell({ r: r, c: 0 }); // ex: A6, A7
-                            let cell = sheet[cellAddr];
-                            if (cell && cell.v !== undefined) {
-                                let val = String(cell.v).trim();
-                                if (val.includes("응시생수")) {
-                                    endRowIdx = r - 1; // "응시생수" 바로 위까지만 읽도록 설정
-                                    break;
-                                }
-                            }
-                        }
-
-                        // [규칙 3] 6행 (r:5)부터 마지막 행(endRow)까지 학생 번호와 각 반의 점수 읽기
-                        for (let r = 5; r <= endRowIdx; r++) {
-                            // A열에서 해당 행의 학생 번호 읽기
-                            let aCellAddr = XLSX.utils.encode_cell({ r: r, c: 0 }); // ex: A12
-                            let aCell = sheet[aCellAddr];
-                            
-                            if (!aCell || aCell.v === undefined) continue; // A열이 비어있으면 스킵
-                            
-                            let studentNum = parseInt(String(aCell.v).trim());
-                            if (isNaN(studentNum)) continue; // A열 값이 정상적인 숫자가 아니면 스킵
-
-                            // 등록된 반들의 열(C)을 순회하며 점수 추출
-                            for (let c in classCols) {
-                                let className = classCols[c]; // 해당 열의 반 이름 (ex: C5셀에서 읽어둔 값)
-                                let scoreCellAddr = XLSX.utils.encode_cell({ r: r, c: parseInt(c) }); // ex: C12
-                                let scoreCell = sheet[scoreCellAddr];
-                                
-                                if (scoreCell && scoreCell.v !== undefined) {
-                                    let score = parseFloat(scoreCell.v);
-                                    if (!isNaN(score)) {
-                                        // "해당 반"의 "해당 번호"에 점수 저장 (중복 번호 덮어쓰기 방지)
-                                        classData[className][studentNum] = { num: studentNum, score: score };
+                            let isFooterRow = false;
+                            // 혹시 몰라 A열~E열(c:0~4)까지 여유있게 검사
+                            for (let c = 0; c <= Math.min(4, range.e.c); c++) {
+                                let cellAddr = XLSX.utils.encode_cell({ r: r, c: c });
+                                let cell = sheet[cellAddr];
+                                if (cell && cell.v) {
+                                    // 공백 제거 후 텍스트 비교
+                                    let val = String(cell.v).replace(/\s/g, ''); 
+                                    // 하단 통계행에 자주 쓰이는 키워드가 하나라도 나오면
+                                    if (val.includes("응시") || val.includes("평균") || val.includes("표준편차") || val.includes("합계")) {
+                                        isFooterRow = true;
+                                        break;
                                     }
                                 }
                             }
+                            if (isFooterRow) {
+                                endRowIdx = r - 1; // 통계행 바로 직전까지만 데이터로 인정
+                                break;
+                            }
                         }
 
-                        // 정리된 객체를 분석에 사용할 배열 형태로 변환
+                        // [규칙 3] 점수 읽어오기 (결측치, 자퇴, 빈칸 무시)
+                        for (let r = 5; r <= endRowIdx; r++) {
+                            let aCellAddr = XLSX.utils.encode_cell({ r: r, c: 0 });
+                            let aCell = sheet[aCellAddr];
+                            
+                            if (!aCell || aCell.v === undefined) continue; 
+                            
+                            let studentNum = parseInt(String(aCell.v).trim());
+                            if (isNaN(studentNum)) continue; 
+
+                            for (let c in classCols) {
+                                let className = classCols[c]; 
+                                let scoreCellAddr = XLSX.utils.encode_cell({ r: r, c: parseInt(c) }); 
+                                let scoreCell = sheet[scoreCellAddr];
+                                
+                                let scoreVal = 0; // 빈칸, 결시 등은 기본적으로 0점 처리하여 모수(인원수)에 포함
+
+                                if (scoreCell && scoreCell.v !== undefined && scoreCell.v !== null) {
+                                    let strVal = String(scoreCell.w || scoreCell.v).trim();
+                                    
+                                    if (strVal === '자퇴' || strVal === '전출') {
+                                        scoreVal = 'EXCLUDE'; // 자퇴/전출은 인원수 제외 마커 표시
+                                    } else {
+                                        let parsedScore = parseFloat(scoreCell.v);
+                                        if (!isNaN(parsedScore)) {
+                                            scoreVal = parsedScore;
+                                        }
+                                    }
+                                }
+                                classData[className][studentNum] = { num: studentNum, score: scoreVal };
+                            }
+                        }
+
+                        // 정리
                         let finalData = {};
                         for (let className in classData) {
                             let studentsArray = Object.values(classData[className]);
                             if (studentsArray.length > 0) {
-                                // 출력 시 보기 좋게 번호 순서대로 정렬
                                 studentsArray.sort((a, b) => a.num - b.num);
                                 finalData[className] = studentsArray;
                             }
                         }
-
                         resolve(finalData);
                     } catch (err) {
                         console.error(err);
@@ -328,7 +339,7 @@
             });
         }
 
-        // 3. 메인 분석 실행 (학기말 통합 시 '반'과 '번호' 정확히 매칭)
+        // 3. 메인 분석 실행 (0점 완전 배제 처리 포함)
         async function executeAnalysis() {
             try {
                 let mergedData = {};
@@ -351,21 +362,23 @@
 
                         const weight = evalList[i].weight / 100;
                         
-                        // [핵심] 여러 파일의 성적을 합산할 때 '반 이름'과 '학생 번호'를 고유 Key로 사용하여 정확히 누적
                         Object.keys(fileData).forEach(className => {
-                            if (!tempDB[className]) tempDB[className] = {}; // 반 객체 생성
+                            if (!tempDB[className]) tempDB[className] = {}; 
                             
                             fileData[className].forEach(student => {
-                                if (!tempDB[className][student.num]) {
-                                    tempDB[className][student.num] = 0; // 해당 학생 번호가 처음이면 0점으로 초기화
+                                if (student.score === 'EXCLUDE') {
+                                    // 한 번이라도 자퇴/전출이면 최종 결과에서도 아예 제외
+                                    tempDB[className][student.num] = 'EXCLUDE';
+                                } else if (tempDB[className][student.num] !== 'EXCLUDE') {
+                                    if (tempDB[className][student.num] === undefined) {
+                                        tempDB[className][student.num] = 0;
+                                    }
+                                    tempDB[className][student.num] += (student.score * weight);
                                 }
-                                // 반영 비율(weight)을 곱해서 점수 누적 합산
-                                tempDB[className][student.num] += (student.score * weight);
                             });
                         });
                     }
 
-                    // 학기말 합산이 끝난 tempDB를 배열로 변환
                     Object.keys(tempDB).forEach(className => {
                         mergedData[className] = Object.keys(tempDB[className]).map(num => ({
                             num: parseInt(num),
@@ -375,7 +388,20 @@
                 }
 
                 if (!mergedData || Object.keys(mergedData).length === 0) {
-                    return alert("분석할 유효한 데이터가 없습니다. 엑셀 파일 양식(5행 반, A열 번호)을 확인해주세요.");
+                    return alert("분석할 유효한 데이터가 없습니다. 양식을 다시 확인해주세요.");
+                }
+
+                // [핵심] 자퇴/전출(EXCLUDE) 마커가 있는 학생만 인원수에서 완벽히 제외, 0점은 유지
+                Object.keys(mergedData).forEach(className => {
+                    mergedData[className] = mergedData[className].filter(student => student.score !== 'EXCLUDE');
+                    // 만약 특정 반에 유효 인원이 0명이면 해당 반 키 자체를 삭제
+                    if (mergedData[className].length === 0) {
+                        delete mergedData[className];
+                    }
+                });
+
+                if (Object.keys(mergedData).length === 0) {
+                    return alert("분석 결과 모든 학생이 자퇴, 전출 등으로 제외되어 분석할 데이터가 없습니다.");
                 }
 
                 parsedData = mergedData;
@@ -394,7 +420,10 @@
             });
             allScores.sort((a, b) => b - a);
             
-            const totalCount = allScores.length;
+            const totalCount = allScores.length; // 0점, 자퇴 등이 모두 제외된 "순수 유효 응시 인원"
+            
+            if (totalCount === 0) return; // 에러 방지
+
             const avg = allScores.reduce((a, b) => a + b, 0) / totalCount;
             const variance = allScores.reduce((a, b) => a + Math.pow(b - avg, 2), 0) / totalCount;
             const std = Math.sqrt(variance);
@@ -415,7 +444,8 @@
             ratios.forEach((ratio, idx) => {
                 const targetCount = Math.round(totalCount * ratio);
                 const cutIdx = Math.min(targetCount - 1, allScores.length - 1);
-                const cutScore = cutIdx >= 0 ? allScores[cutIdx] : 0;
+                // 인원수가 적을 때를 대비한 안전 장치
+                const cutScore = cutIdx >= 0 && cutIdx < allScores.length ? allScores[cutIdx] : 0;
                 
                 currentCuts.push({
                     grade: idx + 1,
@@ -465,7 +495,7 @@
             if (target === 'all') {
                 Object.values(parsedData).forEach(arr => arr.forEach(s => scores.push(s.score)));
             } else {
-                scores = parsedData[target].map(s => s.score);
+                scores = parsedData[target] ? parsedData[target].map(s => s.score) : [];
             }
 
             let bins = Array(10).fill(0);
@@ -490,7 +520,7 @@
                         borderRadius: 4
                     }]
                 },
-                options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+                options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
             });
         }
 
@@ -534,6 +564,7 @@
             let targetStudents = [];
             Object.keys(parsedData).forEach(className => {
                 parsedData[className].forEach(student => {
+                    // 점수 조건에 맞고, 동점자 처리 등으로 인해 인원이 잘리는 것을 방지하기 위해 등급 컷 로직 보완
                     if (student.score >= lowerBound && student.score < upperBound) {
                         targetStudents.push({ cls: className, num: student.num, score: student.score });
                     }
