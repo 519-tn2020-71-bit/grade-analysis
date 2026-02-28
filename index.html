@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>All-in-One 통합 성적 및 등급 계산기</title>
+    <title>All-in-One 통합 성적 및 등급 계산기 (강력 탐색판)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -15,10 +15,13 @@
 <body class="p-4 md:p-8">
     <div class="max-w-7xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden">
         <!-- 헤더 -->
-        <div class="bg-gradient-to-r from-blue-600 to-indigo-700 p-6 text-white flex justify-between items-center">
+        <div class="bg-gradient-to-r from-blue-700 to-indigo-800 p-6 text-white flex justify-between items-center">
             <div>
                 <h1 class="text-3xl font-bold"><i class="fas fa-bolt text-yellow-300 mr-2"></i> All-in-One 통합 성적/등급 계산기</h1>
-                <p class="mt-2 text-blue-100">파일 5개 업로드 한 번으로 <span class="font-bold text-white">합산 + 학적 제외 + 등급컷 + 반별 분포</span>까지 한 번에 끝냅니다.</p>
+                <p class="mt-2 text-blue-100">파일의 줄 번호(행) 위치가 달라도 자동 추적하여 완벽하게 합산합니다.</p>
+            </div>
+            <div class="hidden md:block">
+                <span class="bg-blue-900 text-blue-100 text-xs font-bold px-3 py-1 rounded-full">v2.0 스마트 파싱 적용</span>
             </div>
         </div>
 
@@ -39,7 +42,7 @@
                 <h2 class="text-lg font-bold text-gray-800 mb-4"><i class="fas fa-file-excel text-green-600 mr-2"></i> 성적 파일 업로드 (나이스 양식 그대로)</h2>
                 <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
                     <!-- 1회고사 -->
-                    <div class="bg-white border rounded-lg p-4 shadow-sm">
+                    <div class="bg-white border rounded-lg p-4 shadow-sm hover:shadow-md transition">
                         <label class="font-bold text-gray-700 block mb-2">1회고사 <span class="text-xs text-gray-400 font-normal">(지필)</span></label>
                         <div class="flex items-center mb-3">
                             <input type="number" id="w0" value="35" class="w-16 border-b-2 border-blue-500 bg-gray-50 px-2 py-1 text-center font-bold text-blue-700 focus:outline-none">
@@ -48,7 +51,7 @@
                         <input type="file" id="f0" accept=".csv" class="text-xs w-full cursor-pointer file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
                     </div>
                     <!-- 2회고사 -->
-                    <div class="bg-white border rounded-lg p-4 shadow-sm">
+                    <div class="bg-white border rounded-lg p-4 shadow-sm hover:shadow-md transition">
                         <label class="font-bold text-gray-700 block mb-2">2회고사 <span class="text-xs text-gray-400 font-normal">(지필)</span></label>
                         <div class="flex items-center mb-3">
                             <input type="number" id="w1" value="35" class="w-16 border-b-2 border-blue-500 bg-gray-50 px-2 py-1 text-center font-bold text-blue-700 focus:outline-none">
@@ -57,7 +60,7 @@
                         <input type="file" id="f1" accept=".csv" class="text-xs w-full cursor-pointer file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
                     </div>
                     <!-- 주통 -->
-                    <div class="bg-white border rounded-lg p-4 shadow-sm">
+                    <div class="bg-white border rounded-lg p-4 shadow-sm hover:shadow-md transition">
                         <label class="font-bold text-gray-700 block mb-2">주통 <span class="text-xs text-gray-400 font-normal">(수행)</span></label>
                         <div class="flex items-center mb-3">
                             <input type="number" id="w2" value="15" class="w-16 border-b-2 border-blue-500 bg-gray-50 px-2 py-1 text-center font-bold text-blue-700 focus:outline-none">
@@ -66,7 +69,7 @@
                         <input type="file" id="f2" accept=".csv" class="text-xs w-full cursor-pointer file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
                     </div>
                     <!-- 구술 -->
-                    <div class="bg-white border rounded-lg p-4 shadow-sm">
+                    <div class="bg-white border rounded-lg p-4 shadow-sm hover:shadow-md transition">
                         <label class="font-bold text-gray-700 block mb-2">구술 <span class="text-xs text-gray-400 font-normal">(수행)</span></label>
                         <div class="flex items-center mb-3">
                             <input type="number" id="w3" value="10" class="w-16 border-b-2 border-blue-500 bg-gray-50 px-2 py-1 text-center font-bold text-blue-700 focus:outline-none">
@@ -75,7 +78,7 @@
                         <input type="file" id="f3" accept=".csv" class="text-xs w-full cursor-pointer file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
                     </div>
                     <!-- 에세이 -->
-                    <div class="bg-white border rounded-lg p-4 shadow-sm">
+                    <div class="bg-white border rounded-lg p-4 shadow-sm hover:shadow-md transition">
                         <label class="font-bold text-gray-700 block mb-2">에세이 <span class="text-xs text-gray-400 font-normal">(수행)</span></label>
                         <div class="flex items-center mb-3">
                             <input type="number" id="w4" value="5" class="w-16 border-b-2 border-blue-500 bg-gray-50 px-2 py-1 text-center font-bold text-blue-700 focus:outline-none">
@@ -87,14 +90,12 @@
 
                 <div class="mt-6 flex justify-center">
                     <button onclick="executeAllInOne()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-12 rounded-full shadow-lg transition transform hover:-translate-y-1 text-lg flex items-center">
-                        <i class="fas fa-cogs mr-2"></i> 완벽 통합 자동 산출 시작
+                        <i class="fas fa-magic mr-2"></i> 스마트 통합 데이터 산출
                     </button>
                 </div>
             </div>
 
-            <!-- ---------------------------------------------------------------- -->
             <!-- 결과 대시보드 -->
-            <!-- ---------------------------------------------------------------- -->
             <div id="resultsArea" class="hidden fade-in space-y-8">
                 
                 <!-- 1. 요약 카드 -->
@@ -184,53 +185,72 @@
         // 학적 변동 등 점수 합산에서 제외할 키워드 목록
         const DROP_KEYWORDS = ['자퇴', '전출', '제적', '유예', '면제', '위탁'];
         
-        // 에러 메시지 표시 함수 (alert 대체)
+        // 에러 표시 유틸
         function showError(msg) {
             const errDiv = document.getElementById('errorMessage');
-            const errText = document.getElementById('errorText');
-            errText.innerText = msg;
+            document.getElementById('errorText').innerText = msg;
             errDiv.classList.remove('hidden');
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
-
         function hideError() {
             document.getElementById('errorMessage').classList.add('hidden');
         }
 
-        // CSV 파일 읽기 유틸리티 (EUC-KR 인코딩 처리)
+        // CSV 파일 읽기 (인코딩 깨짐 완벽 방지 처리)
         async function readCSV(file) {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
                 reader.readAsText(file, 'euc-kr');
-                reader.onload = (e) => resolve(e.target.result);
-                reader.onerror = (e) => reject(new Error("파일을 읽는 중 오류가 발생했습니다."));
+                reader.onload = (e) => {
+                    let text = e.target.result;
+                    // EUC-KR로 읽었는데 글자가 깨져서 '반번호'나 '평가' 글씨가 안 보일 경우 UTF-8로 재시도
+                    if (!text.includes('반번호') && !text.includes('번호') && !text.includes('평가')) {
+                        const utf8Reader = new FileReader();
+                        utf8Reader.readAsText(file, 'utf-8');
+                        utf8Reader.onload = (e2) => resolve(e2.target.result);
+                        utf8Reader.onerror = () => resolve(text); // 실패시 원본 반환
+                    } else {
+                        resolve(text);
+                    }
+                };
+                reader.onerror = () => reject(new Error("파일 읽기 실패"));
             });
         }
 
-        // 나이스 CSV 데이터 파싱
-        function parseCSVData(csvText) {
-            const lines = csvText.split('\n');
+        // 스마트 CSV 데이터 파싱 (줄 번호 무관, 띄어쓰기 무시)
+        function parseCSVData(csvText, fileName) {
+            // \r(캐리지리턴) 제거 후 줄바꿈 기준으로 나눔
+            const lines = csvText.replace(/\r/g, '').split('\n');
             let isDataRow = false;
             let classColumns = [];
             let data = {}; // { classNum: { stuNum: rawValue } }
 
             for (let i = 0; i < lines.length; i++) {
-                let cols = lines[i].split(',').map(c => c.replace(/"/g, '').trim()); // 따옴표 및 공백 제거
-                let firstCol = cols[0] ? cols[0] : '';
+                let line = lines[i];
+                if (!line.trim()) continue; // 빈 줄 무시
 
-                // '반번호' 행을 찾아 각 반이 몇 번째 열인지 매핑
-                if (firstCol === '반번호') {
+                // 따옴표 및 양쪽 공백 제거
+                let cols = line.split(',').map(c => c.replace(/"/g, '').trim()); 
+                let firstCol = cols[0];
+
+                // 띄어쓰기 모두 없앤 압축 문자열 (예: "반 번호" -> "반번호")
+                let compressedFirst = firstCol.replace(/\s+/g, '');
+
+                // 줄 위치(5행이든 6행이든 10행이든) 상관없이 이 키워드만 만나면 데이터 파싱 시작
+                if (compressedFirst === '반번호' || compressedFirst === '번호') {
                     isDataRow = true;
+                    // 각 열이 몇 반인지 맵핑
                     for (let c = 1; c < cols.length; c++) {
-                        let classNum = cols[c];
-                        if (classNum && classNum !== '') {
+                        // 숫자만 추출 (예: "1반" -> "1")
+                        let classNum = cols[c].replace(/[^0-9]/g, ''); 
+                        if (classNum !== '') {
                             classColumns.push({ index: c, classNum: classNum });
                         }
                     }
-                    continue;
+                    continue; 
                 }
 
-                // 실제 점수 데이터 파싱
+                // isDataRow가 켜진 상태에서 첫 열이 숫자(학생 번호)이면 점수 긁어오기
                 if (isDataRow && firstCol !== '' && !isNaN(firstCol)) {
                     let studentNum = parseInt(firstCol);
                     classColumns.forEach(c => {
@@ -240,6 +260,12 @@
                     });
                 }
             }
+
+            // 파싱이 끝났는데 반 정보가 하나도 없다면 에러 리턴
+            if (!isDataRow || classColumns.length === 0) {
+                throw new Error(`[${fileName}] 파일에서 '반번호' 행을 찾지 못했습니다. 파일 구조를 확인해주세요.`);
+            }
+
             return data;
         }
 
@@ -251,6 +277,7 @@
             try {
                 let evals = [];
                 let totalWeight = 0;
+                const testNames = ['1회고사', '2회고사', '주통', '구술', '에세이'];
 
                 // 1. 파일 및 비율 유효성 검사
                 for (let i = 0; i < 5; i++) {
@@ -258,7 +285,6 @@
                     const weightInput = document.getElementById(`w${i}`);
                     
                     if (!fileInput.files.length) {
-                        const testNames = ['1회고사', '2회고사', '주통', '구술', '에세이'];
                         return showError(`${testNames[i]} 엑셀 파일(.csv)을 업로드해주세요.`);
                     }
                     
@@ -273,11 +299,11 @@
                     return showError(`반영 비율의 합이 100%가 아닙니다. 현재 합계: ${totalWeight}%`);
                 }
 
-                // 2. 파일 파싱
+                // 2. 스마트 파일 파싱
                 let parsedFiles = [];
                 for (let ev of evals) {
                     let text = await readCSV(ev.file);
-                    let data = parseCSVData(text);
+                    let data = parseCSVData(text, ev.file.name);
                     parsedFiles.push({ data: data, weight: ev.weight });
                 }
 
@@ -308,7 +334,7 @@
                                 masterDB[key].isDrop = true;
                             }
 
-                            // '미인정결' 등 문자열은 parseFloat에서 NaN이 되어 0점 처리됨
+                            // '미인정결' 등 문자열은 parseFloat에서 NaN이 되어 0점(미합산) 처리됨
                             let score = parseFloat(rawVal);
                             if (!isNaN(score)) {
                                 // 만점 대비 가중치 비율을 곱하여 합산
@@ -324,19 +350,19 @@
 
                 for (let key in masterDB) {
                     let stu = masterDB[key];
-                    if (stu.allEmpty) continue; // 5개 파일 내내 아무 값도 없는 빈 칸은 무시
+                    if (stu.allEmpty) continue; // 데이터가 아예 없는 빈 셀(유령 학생) 방지
                     
                     if (stu.isDrop) {
                         dropNames.push(`${stu.classNum}반 ${stu.stuNum}번`);
                     } else {
-                        // 소수점 2자리 정리
+                        // 소수점 2자리에서 반올림 정리
                         stu.totalScore = Number(stu.totalScore.toFixed(2));
                         validStudents.push(stu);
                     }
                 }
 
                 let totalCount = validStudents.length;
-                if (totalCount === 0) return showError("점수를 계산할 유효한 학생 데이터가 없습니다.");
+                if (totalCount === 0) return showError("점수를 계산할 유효한 학생 데이터가 없습니다. 파일이 정상적인지 확인해주세요.");
 
                 // 점수 내림차순 정렬
                 validStudents.sort((a, b) => b.totalScore - a.totalScore);
@@ -356,7 +382,7 @@
 
                 // 6. 등급 커트라인 계산 (9등급제)
                 const ratios = [0.04, 0.11, 0.23, 0.40, 0.60, 0.77, 0.89, 0.96, 1.00];
-                let gradeCuts = []; // [{ grade: 1, targetCount: 8, cutScore: 95.2 }, ...]
+                let gradeCuts = []; 
                 let tbodyCuts = document.getElementById('gradeTableBody');
                 tbodyCuts.innerHTML = '';
 
@@ -368,11 +394,7 @@
                     
                     let cutScore = validScoresOnly[cutIdx];
                     
-                    gradeCuts.push({
-                        grade: grade,
-                        targetCount: targetCount,
-                        cutScore: cutScore
-                    });
+                    gradeCuts.push({ grade: grade, cutScore: cutScore });
 
                     let displayRatio = (ratio * 100).toFixed(0);
                     
@@ -387,10 +409,9 @@
                 });
 
                 // 7. 반별 등급 분포도 계산
-                let classDist = {}; // { 1: [0,0,0,0,0,0,0,0,0], 2: ... }
+                let classDist = {};
                 
                 validStudents.forEach(stu => {
-                    // 학생의 등급 판별 (위에서부터 컷을 비교하여 최초로 컷보다 크거나 같으면 해당 등급)
                     let studentGrade = 9;
                     for (let i = 0; i < gradeCuts.length; i++) {
                         if (stu.totalScore >= gradeCuts[i].cutScore) {
@@ -405,12 +426,9 @@
                     classDist[stu.classNum][studentGrade - 1]++;
                 });
 
-                // 반 번호 오름차순으로 정렬
                 let classKeys = Object.keys(classDist).map(Number).sort((a, b) => a - b);
-                
                 let tbodyDist = document.getElementById('distTableBody');
                 tbodyDist.innerHTML = '';
-
                 let totalDistSum = Array(9).fill(0);
 
                 classKeys.forEach(cNum => {
@@ -419,17 +437,13 @@
                     
                     let tr = document.createElement('tr');
                     tr.className = "hover:bg-green-50";
-                    
                     let tdHtml = `<td class="px-3 py-3 font-bold text-gray-700 border-r bg-gray-50">${cNum}반</td>`;
                     
                     dist.forEach((count, idx) => {
                         classTotal += count;
                         totalDistSum[idx] += count;
-                        
-                        // 4~6등급은 약간 배경색을 다르게 주어 중간 분포를 쉽게 파악
                         let bgClass = (idx >= 3 && idx <= 5) ? "bg-blue-50/50" : "";
                         let textClass = count > 0 ? "text-gray-800 font-semibold" : "text-gray-300";
-                        
                         tdHtml += `<td class="px-2 py-3 ${bgClass} ${textClass}">${count > 0 ? count : '-'}</td>`;
                     });
                     
@@ -438,7 +452,7 @@
                     tbodyDist.appendChild(tr);
                 });
 
-                // 총계(합계) 행 추가
+                // 총계 행 추가
                 let footTr = document.createElement('tr');
                 footTr.className = "bg-gray-200 border-t-2 border-gray-400";
                 let footHtml = `<td class="px-3 py-3 font-black text-gray-800 border-r">전체 누계</td>`;
@@ -453,16 +467,13 @@
                 footTr.innerHTML = footHtml;
                 tbodyDist.appendChild(footTr);
 
-
-                // 결과창 보이기
+                // 결과창 보이기 및 스크롤
                 document.getElementById('resultsArea').classList.remove('hidden');
-                
-                // 스무스 스크롤
                 document.getElementById('resultsArea').scrollIntoView({ behavior: 'smooth', block: 'start' });
 
             } catch (error) {
                 console.error(error);
-                showError("데이터 처리 중 예상치 못한 오류가 발생했습니다. 파일 형식이 맞는지 확인해주세요.");
+                showError(error.message || "데이터 처리 중 예상치 못한 오류가 발생했습니다. 파일 형식을 다시 확인해주세요.");
             }
         }
     </script>
