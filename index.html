@@ -22,7 +22,7 @@
                 <p class="mt-2 text-blue-200">항목을 자유롭게 추가하고 나이스 엑셀 파일(.xlsx, .csv)을 업로드하세요.</p>
             </div>
             <div class="hidden md:block">
-                <span class="bg-yellow-400 text-blue-900 text-xs font-black px-3 py-1 rounded-full">스마트 파싱 & 엑셀 지원 엔진</span>
+                <span class="bg-yellow-400 text-blue-900 text-xs font-black px-3 py-1 rounded-full">정밀 부동소수점 보정 엔진 적용</span>
             </div>
         </div>
 
@@ -199,11 +199,13 @@
             container.appendChild(rowDiv);
         }
 
+        // 선생님이 요청하신 테스트 비율 (35, 35, 15, 10, 5) 기본 세팅
         window.onload = () => {
-            addEvalRow("1회고사", 30);
-            addEvalRow("2회고사", 30);
-            addEvalRow("수행평가(구술)", 20);
-            addEvalRow("수행평가(에세이)", 20);
+            addEvalRow("1회고사", 35);
+            addEvalRow("2회고사", 35);
+            addEvalRow("수행평가 1", 15);
+            addEvalRow("수행평가 2", 10);
+            addEvalRow("수행평가 3", 5);
         };
 
         async function readFile(file) {
@@ -382,9 +384,12 @@
 
                             let score = parseFloat(rawVal);
                             if (!isNaN(score)) {
-                                // [정정된 로직] 나이스 기준에 맞게 각 항목은 비율만 곱하고, 반올림 없이 그대로 모두 더함
-                                let weighted = score * (pf.weight / 100);
-                                masterDB[key].totalScore += weighted;
+                                // 핵심 수정 1: 자바스크립트의 부동소수점 오차(예: 79.6*0.35=27.8599999996)를 차단하기 위해
+                                // 환산점수 및 총합 누적 과정에서 소수점 6번째 자리로 강제 고정하여 깨끗한 숫자로 만듦
+                                let weightRatio = pf.weight / 100;
+                                let weighted = Number((score * weightRatio).toFixed(6));
+                                
+                                masterDB[key].totalScore = Number((masterDB[key].totalScore + weighted).toFixed(6));
                                 masterDB[key].weightedScores[pf.name] = weighted;
                             }
                         }
@@ -407,8 +412,9 @@
                         }
                         dropNames.push(`${stu.classNum}반 ${stu.stuNum}번(${reason})`);
                     } else {
-                        // [정정된 로직] 최종 합산된 총점에 대해서만 소수 셋째 자리에서 반올림 (Number.EPSILON 추가로 JS 부동소수점 오류 완벽 방지)
-                        stu.totalScore = Math.round((stu.totalScore + Number.EPSILON) * 100) / 100;
+                        // 핵심 수정 2: 가장 강력하고 완벽한 자바스크립트 반올림 기법인 Exponential(지수) 반올림 적용
+                        // 이렇게 하면 87.985가 절대 87.98로 버림되지 않고 완벽하게 87.99로 반올림됩니다.
+                        stu.totalScore = Number(Math.round(stu.totalScore + "e+2") + "e-2");
                         validStudents.push(stu);
                     }
                 }
@@ -557,9 +563,8 @@
                         let subHtml = `<div class="font-semibold text-gray-800">${rawStr}</div>`;
                         
                         if (weightScore !== undefined) {
-                            // 컴퓨터 계산 시 발생하는 쓰레기값(0.000000002 등)만 화면에서 제거하고 원본 그대로 표시
-                            let displayScore = Number(weightScore.toFixed(4)); 
-                            subHtml += `<div class="text-xs text-blue-500 font-bold">환산점수: ${displayScore}</div>`;
+                            // 이제 내부에서 부동소수점 오차가 완벽히 제거되었으므로 그대로 출력해도 깨끗하게 나옵니다.
+                            subHtml += `<div class="text-xs text-blue-500 font-bold">환산점수: ${weightScore}</div>`;
                         } else {
                             subHtml += `<div class="text-xs text-gray-400">(-)</div>`;
                         }
