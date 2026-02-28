@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>All-in-One 통합 성적 및 등급 계산기 (강력 탐색판)</title>
+    <title>All-in-One 통합 성적 및 등급 계산기 (절대 방어판)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -15,21 +15,21 @@
 <body class="p-4 md:p-8">
     <div class="max-w-7xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden">
         <!-- 헤더 -->
-        <div class="bg-gradient-to-r from-blue-700 to-indigo-800 p-6 text-white flex justify-between items-center">
+        <div class="bg-gradient-to-r from-blue-800 to-indigo-900 p-6 text-white flex justify-between items-center">
             <div>
-                <h1 class="text-3xl font-bold"><i class="fas fa-bolt text-yellow-300 mr-2"></i> All-in-One 통합 성적/등급 계산기</h1>
-                <p class="mt-2 text-blue-100">파일의 줄 번호(행) 위치가 달라도 자동 추적하여 완벽하게 합산합니다.</p>
+                <h1 class="text-3xl font-bold"><i class="fas fa-shield-alt text-yellow-400 mr-2"></i> 통합 성적/등급 계산기 (궁극 파싱판)</h1>
+                <p class="mt-2 text-blue-200">글자가 깨져도, 줄 번호가 달라도 완벽하게 추적하여 산출합니다.</p>
             </div>
             <div class="hidden md:block">
-                <span class="bg-blue-900 text-blue-100 text-xs font-bold px-3 py-1 rounded-full">v2.0 스마트 파싱 적용</span>
+                <span class="bg-yellow-400 text-blue-900 text-xs font-black px-3 py-1 rounded-full">v3.0 불사조 모드 적용</span>
             </div>
         </div>
 
         <div class="p-6 md:p-8">
-            <!-- 에러 메시지 창 (alert 대신 사용) -->
+            <!-- 에러 메시지 창 -->
             <div id="errorMessage" class="hidden fade-in bg-red-50 border-l-4 border-red-500 p-4 mb-6 rounded-r-lg shadow-sm">
                 <div class="flex">
-                    <div class="flex-shrink-0"><i class="fas fa-exclamation-circle text-red-500 mt-1"></i></div>
+                    <div class="flex-shrink-0"><i class="fas fa-exclamation-triangle text-red-500 mt-1"></i></div>
                     <div class="ml-3">
                         <h3 class="text-sm font-bold text-red-800">확인이 필요합니다</h3>
                         <div class="mt-1 text-sm text-red-700" id="errorText"></div>
@@ -39,7 +39,7 @@
 
             <!-- 파일 및 비율 입력 섹션 -->
             <div class="bg-gray-50 rounded-xl p-6 mb-8 border border-gray-200 shadow-inner">
-                <h2 class="text-lg font-bold text-gray-800 mb-4"><i class="fas fa-file-excel text-green-600 mr-2"></i> 성적 파일 업로드 (나이스 양식 그대로)</h2>
+                <h2 class="text-lg font-bold text-gray-800 mb-4"><i class="fas fa-file-excel text-green-600 mr-2"></i> 성적 파일 업로드 (나이스 다운로드 CSV 원본)</h2>
                 <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
                     <!-- 1회고사 -->
                     <div class="bg-white border rounded-lg p-4 shadow-sm hover:shadow-md transition">
@@ -89,16 +89,15 @@
                 </div>
 
                 <div class="mt-6 flex justify-center">
-                    <button onclick="executeAllInOne()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-12 rounded-full shadow-lg transition transform hover:-translate-y-1 text-lg flex items-center">
-                        <i class="fas fa-magic mr-2"></i> 스마트 통합 데이터 산출
+                    <button onclick="executeAllInOne()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-12 rounded-full shadow-lg transition transform hover:-translate-y-1 text-lg flex items-center">
+                        <i class="fas fa-rocket mr-2"></i> 성적 합산 및 등급 컷 계산
                     </button>
                 </div>
             </div>
 
             <!-- 결과 대시보드 -->
             <div id="resultsArea" class="hidden fade-in space-y-8">
-                
-                <!-- 1. 요약 카드 -->
+                <!-- 요약 카드 -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div class="bg-white border border-blue-100 rounded-xl shadow-md p-6 flex items-center justify-between relative overflow-hidden">
                         <div class="absolute right-0 top-0 w-24 h-24 bg-blue-50 rounded-bl-full z-0"></div>
@@ -106,7 +105,7 @@
                             <p class="text-sm text-gray-500 font-bold mb-1">최종 등급 산출 대상 인원</p>
                             <p class="text-5xl font-black text-blue-600" id="totalCount">- <span class="text-2xl font-bold">명</span></p>
                         </div>
-                        <i class="fas fa-user-graduate text-5xl text-blue-200 relative z-10"></i>
+                        <i class="fas fa-users text-5xl text-blue-200 relative z-10"></i>
                     </div>
                     
                     <div class="bg-white border border-red-100 rounded-xl shadow-md p-6 relative overflow-hidden">
@@ -115,20 +114,19 @@
                             <div>
                                 <p class="text-sm text-gray-500 font-bold mb-1">자동 제외 대상자 (자퇴/전출 등)</p>
                                 <p class="text-4xl font-black text-red-500" id="dropCount">- 명</p>
-                                <div id="dropNames" class="mt-2 text-sm text-red-600 font-medium bg-red-50 p-2 rounded-lg border border-red-100 inline-block"></div>
+                                <div id="dropNames" class="mt-2 text-sm text-red-600 font-medium bg-red-50 p-2 rounded-lg border border-red-100 inline-block max-h-20 overflow-y-auto"></div>
                             </div>
-                            <i class="fas fa-user-slash text-4xl text-red-200"></i>
+                            <i class="fas fa-user-times text-4xl text-red-200"></i>
                         </div>
                     </div>
                 </div>
 
-                <!-- 2. 등급컷 및 반별 분포 그리드 -->
+                <!-- 등급컷 및 반별 분포 그리드 -->
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    
-                    <!-- 왼쪽: 9등급 커트라인 표 -->
+                    <!-- 9등급 커트라인 -->
                     <div class="lg:col-span-1 bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
                         <div class="bg-indigo-50 px-6 py-4 border-b border-gray-200">
-                            <h3 class="text-lg font-bold text-indigo-900"><i class="fas fa-chart-line mr-2 text-indigo-600"></i>9등급 커트라인 (100점 만점)</h3>
+                            <h3 class="text-lg font-bold text-indigo-900"><i class="fas fa-trophy mr-2 text-indigo-600"></i>9등급 커트라인 (100점 만점)</h3>
                         </div>
                         <div class="overflow-x-auto">
                             <table class="min-w-full divide-y divide-gray-200 text-center">
@@ -140,17 +138,16 @@
                                     </tr>
                                 </thead>
                                 <tbody id="gradeTableBody" class="bg-white divide-y divide-gray-200">
-                                    <!-- 등급 컷 데이터 렌더링 -->
                                 </tbody>
                             </table>
                         </div>
                     </div>
 
-                    <!-- 오른쪽: 반별 등급 분포도 -->
+                    <!-- 반별 등급 분포도 -->
                     <div class="lg:col-span-2 bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
                         <div class="bg-green-50 px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-                            <h3 class="text-lg font-bold text-green-900"><i class="fas fa-border-all mr-2 text-green-600"></i>반별 등급 분포도</h3>
-                            <span class="text-xs text-green-700 bg-green-100 px-2 py-1 rounded-full font-bold">자동 분류 완료</span>
+                            <h3 class="text-lg font-bold text-green-900"><i class="fas fa-th mr-2 text-green-600"></i>반별 등급 분포도</h3>
+                            <span class="text-xs text-green-700 bg-green-100 px-2 py-1 rounded-full font-bold">성공적 맵핑 완표</span>
                         </div>
                         <div class="overflow-x-auto p-4">
                             <table class="min-w-full divide-y divide-gray-300 text-center border">
@@ -170,22 +167,19 @@
                                     </tr>
                                 </thead>
                                 <tbody id="distTableBody" class="bg-white divide-y divide-gray-200">
-                                    <!-- 반별 분포 데이터 렌더링 -->
                                 </tbody>
                             </table>
                         </div>
                     </div>
                 </div>
-
             </div>
         </div>
     </div>
 
     <script>
-        // 학적 변동 등 점수 합산에서 제외할 키워드 목록
+        // 학적 변동 제외 키워드 (미인정결석 등은 0점 처리되도록 제외 키워드에서 뺐습니다)
         const DROP_KEYWORDS = ['자퇴', '전출', '제적', '유예', '면제', '위탁'];
         
-        // 에러 표시 유틸
         function showError(msg) {
             const errDiv = document.getElementById('errorMessage');
             document.getElementById('errorText').innerText = msg;
@@ -196,19 +190,24 @@
             document.getElementById('errorMessage').classList.add('hidden');
         }
 
-        // CSV 파일 읽기 (인코딩 깨짐 완벽 방지 처리)
+        // 인코딩 보완 CSV 읽기
         async function readCSV(file) {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
                 reader.readAsText(file, 'euc-kr');
                 reader.onload = (e) => {
                     let text = e.target.result;
-                    // EUC-KR로 읽었는데 글자가 깨져서 '반번호'나 '평가' 글씨가 안 보일 경우 UTF-8로 재시도
-                    if (!text.includes('반번호') && !text.includes('번호') && !text.includes('평가')) {
+                    // BOM(Byte Order Mark) 제거
+                    text = text.replace(/^\uFEFF/, '');
+                    
+                    // EUC-KR로 읽었는데 한글이 심하게 깨져 '반'이나 '번호'가 없다면 UTF-8 재시도
+                    if (!text.includes('반') && !text.includes('번호') && !text.includes('평가')) {
                         const utf8Reader = new FileReader();
                         utf8Reader.readAsText(file, 'utf-8');
-                        utf8Reader.onload = (e2) => resolve(e2.target.result);
-                        utf8Reader.onerror = () => resolve(text); // 실패시 원본 반환
+                        utf8Reader.onload = (e2) => {
+                            resolve(e2.target.result.replace(/^\uFEFF/, ''));
+                        };
+                        utf8Reader.onerror = () => resolve(text);
                     } else {
                         resolve(text);
                     }
@@ -217,59 +216,83 @@
             });
         }
 
-        // 스마트 CSV 데이터 파싱 (줄 번호 무관, 띄어쓰기 무시)
+        // 🌟 절대 실패하지 않는 궁극의 파싱 로직
         function parseCSVData(csvText, fileName) {
-            // \r(캐리지리턴) 제거 후 줄바꿈 기준으로 나눔
             const lines = csvText.replace(/\r/g, '').split('\n');
             let isDataRow = false;
             let classColumns = [];
             let data = {}; // { classNum: { stuNum: rawValue } }
+            let headerFound = false;
 
             for (let i = 0; i < lines.length; i++) {
                 let line = lines[i];
-                if (!line.trim()) continue; // 빈 줄 무시
+                if (!line.trim()) continue;
 
-                // 따옴표 및 양쪽 공백 제거
                 let cols = line.split(',').map(c => c.replace(/"/g, '').trim()); 
-                let firstCol = cols[0];
+                let firstCol = cols[0] || '';
 
-                // 띄어쓰기 모두 없앤 압축 문자열 (예: "반 번호" -> "반번호")
-                let compressedFirst = firstCol.replace(/\s+/g, '');
+                // 한글과 영문, 숫자만 남겨서 특수문자/공백/깨짐 방지
+                let cleanFirst = firstCol.replace(/[^가-힣0-9a-zA-Z]/g, '');
 
-                // 줄 위치(5행이든 6행이든 10행이든) 상관없이 이 키워드만 만나면 데이터 파싱 시작
-                if (compressedFirst === '반번호' || compressedFirst === '번호') {
-                    isDataRow = true;
-                    // 각 열이 몇 반인지 맵핑
-                    for (let c = 1; c < cols.length; c++) {
-                        // 숫자만 추출 (예: "1반" -> "1")
-                        let classNum = cols[c].replace(/[^0-9]/g, ''); 
-                        if (classNum !== '') {
-                            classColumns.push({ index: c, classNum: classNum });
+                // 헤더를 찾는 2가지 방법 (1. 글자로 찾기 2. 숫자의 연속성으로 찾기)
+                if (!isDataRow) {
+                    let isHeader = false;
+                    
+                    // 방법 1: 글자로 인식
+                    if (cleanFirst.includes('반') || cleanFirst.includes('번호')) {
+                        isHeader = true;
+                    } 
+                    // 방법 2: 글자가 깨졌더라도, 1, 2, 3, 4 반 숫자가 연속으로 적혀있는 행이면 헤더로 강제 인식
+                    else {
+                        let consecutiveNumbers = 0;
+                        for (let c = 1; c <= Math.min(cols.length - 1, 7); c++) {
+                            if (cols[c] && cols[c].replace(/[^0-9]/g, '') === String(c)) {
+                                consecutiveNumbers++;
+                            }
                         }
+                        if (consecutiveNumbers >= 3) isHeader = true; // 최소 3개반 이상 숫자가 맞으면 통과
                     }
-                    continue; 
+
+                    // 헤더(반번호 행)를 찾았을 때
+                    if (isHeader) {
+                        isDataRow = true;
+                        headerFound = true;
+                        
+                        // 각 열이 몇 반인지 맵핑
+                        for (let c = 1; c < cols.length; c++) {
+                            let classNum = cols[c].replace(/[^0-9]/g, ''); 
+                            if (classNum !== '') {
+                                classColumns.push({ index: c, classNum: classNum });
+                            }
+                        }
+                        continue; // 헤더 행 자체는 학생 점수가 아니므로 다음 줄로 넘어감
+                    }
                 }
 
-                // isDataRow가 켜진 상태에서 첫 열이 숫자(학생 번호)이면 점수 긁어오기
-                if (isDataRow && firstCol !== '' && !isNaN(firstCol)) {
-                    let studentNum = parseInt(firstCol);
-                    classColumns.forEach(c => {
-                        let val = cols[c.index] !== undefined ? cols[c.index] : '';
-                        if (!data[c.classNum]) data[c.classNum] = {};
-                        data[c.classNum][studentNum] = val;
-                    });
+                // 헤더를 찾은 이후의 줄들 (실제 학생 데이터 파싱)
+                if (isDataRow) {
+                    let cleanStudentNumStr = firstCol.replace(/[^0-9]/g, ''); // 학생 번호 (숫자만 추출)
+                    
+                    if (cleanStudentNumStr !== '') {
+                        let studentNum = parseInt(cleanStudentNumStr);
+                        if (studentNum > 0) {
+                            classColumns.forEach(c => {
+                                let val = cols[c.index] !== undefined ? cols[c.index].trim() : '';
+                                if (!data[c.classNum]) data[c.classNum] = {};
+                                data[c.classNum][studentNum] = val;
+                            });
+                        }
+                    }
                 }
             }
 
-            // 파싱이 끝났는데 반 정보가 하나도 없다면 에러 리턴
-            if (!isDataRow || classColumns.length === 0) {
-                throw new Error(`[${fileName}] 파일에서 '반번호' 행을 찾지 못했습니다. 파일 구조를 확인해주세요.`);
+            if (!headerFound || classColumns.length === 0) {
+                throw new Error(`[${fileName}] 파일에서 학생 성적 표를 인식하지 못했습니다. 원본 CSV 파일이 맞는지 확인해주세요.`);
             }
 
             return data;
         }
 
-        // 메인 통합 로직
         async function executeAllInOne() {
             hideError();
             document.getElementById('resultsArea').classList.add('hidden');
@@ -279,7 +302,6 @@
                 let totalWeight = 0;
                 const testNames = ['1회고사', '2회고사', '주통', '구술', '에세이'];
 
-                // 1. 파일 및 비율 유효성 검사
                 for (let i = 0; i < 5; i++) {
                     const fileInput = document.getElementById(`f${i}`);
                     const weightInput = document.getElementById(`w${i}`);
@@ -299,7 +321,6 @@
                     return showError(`반영 비율의 합이 100%가 아닙니다. 현재 합계: ${totalWeight}%`);
                 }
 
-                // 2. 스마트 파일 파싱
                 let parsedFiles = [];
                 for (let ev of evals) {
                     let text = await readCSV(ev.file);
@@ -307,8 +328,7 @@
                     parsedFiles.push({ data: data, weight: ev.weight });
                 }
 
-                // 3. 데이터 병합 (모든 고사 합산)
-                let masterDB = {}; // 키: "반-번호"
+                let masterDB = {}; 
                 
                 parsedFiles.forEach((pf) => {
                     let db = pf.data;
@@ -329,46 +349,39 @@
 
                             if (rawVal !== '') masterDB[key].allEmpty = false;
 
-                            // '자퇴' 등 제외 키워드 감지 시 해당 학생 드롭 처리
                             if (DROP_KEYWORDS.some(kw => rawVal.includes(kw))) {
                                 masterDB[key].isDrop = true;
                             }
 
-                            // '미인정결' 등 문자열은 parseFloat에서 NaN이 되어 0점(미합산) 처리됨
                             let score = parseFloat(rawVal);
                             if (!isNaN(score)) {
-                                // 만점 대비 가중치 비율을 곱하여 합산
                                 masterDB[key].totalScore += score * (pf.weight / 100);
                             }
                         }
                     }
                 });
 
-                // 4. 유효 학생 리스트 도출
                 let validStudents = [];
                 let dropNames = [];
 
                 for (let key in masterDB) {
                     let stu = masterDB[key];
-                    if (stu.allEmpty) continue; // 데이터가 아예 없는 빈 셀(유령 학생) 방지
+                    if (stu.allEmpty) continue; 
                     
                     if (stu.isDrop) {
                         dropNames.push(`${stu.classNum}반 ${stu.stuNum}번`);
                     } else {
-                        // 소수점 2자리에서 반올림 정리
                         stu.totalScore = Number(stu.totalScore.toFixed(2));
                         validStudents.push(stu);
                     }
                 }
 
                 let totalCount = validStudents.length;
-                if (totalCount === 0) return showError("점수를 계산할 유효한 학생 데이터가 없습니다. 파일이 정상적인지 확인해주세요.");
+                if (totalCount === 0) return showError("점수를 계산할 학생 데이터가 없습니다. 파일의 내용이 올바른지 확인해주세요.");
 
-                // 점수 내림차순 정렬
                 validStudents.sort((a, b) => b.totalScore - a.totalScore);
                 let validScoresOnly = validStudents.map(s => s.totalScore);
 
-                // 5. 대시보드 요약 업데이트
                 document.getElementById('totalCount').innerHTML = `${totalCount} <span class="text-2xl font-bold">명</span>`;
                 document.getElementById('dropCount').innerText = `${dropNames.length} 명`;
                 
@@ -380,7 +393,7 @@
                     dropNamesEl.style.display = 'none';
                 }
 
-                // 6. 등급 커트라인 계산 (9등급제)
+                // 등급 커트라인 계산
                 const ratios = [0.04, 0.11, 0.23, 0.40, 0.60, 0.77, 0.89, 0.96, 1.00];
                 let gradeCuts = []; 
                 let tbodyCuts = document.getElementById('gradeTableBody');
@@ -393,7 +406,6 @@
                     if (cutIdx < 0) cutIdx = 0;
                     
                     let cutScore = validScoresOnly[cutIdx];
-                    
                     gradeCuts.push({ grade: grade, cutScore: cutScore });
 
                     let displayRatio = (ratio * 100).toFixed(0);
@@ -408,7 +420,7 @@
                     tbodyCuts.appendChild(tr);
                 });
 
-                // 7. 반별 등급 분포도 계산
+                // 반별 분포도 계산
                 let classDist = {};
                 
                 validStudents.forEach(stu => {
@@ -436,7 +448,7 @@
                     let classTotal = 0;
                     
                     let tr = document.createElement('tr');
-                    tr.className = "hover:bg-green-50";
+                    tr.className = "hover:bg-green-50 transition";
                     let tdHtml = `<td class="px-3 py-3 font-bold text-gray-700 border-r bg-gray-50">${cNum}반</td>`;
                     
                     dist.forEach((count, idx) => {
@@ -452,7 +464,6 @@
                     tbodyDist.appendChild(tr);
                 });
 
-                // 총계 행 추가
                 let footTr = document.createElement('tr');
                 footTr.className = "bg-gray-200 border-t-2 border-gray-400";
                 let footHtml = `<td class="px-3 py-3 font-black text-gray-800 border-r">전체 누계</td>`;
@@ -467,13 +478,12 @@
                 footTr.innerHTML = footHtml;
                 tbodyDist.appendChild(footTr);
 
-                // 결과창 보이기 및 스크롤
                 document.getElementById('resultsArea').classList.remove('hidden');
                 document.getElementById('resultsArea').scrollIntoView({ behavior: 'smooth', block: 'start' });
 
             } catch (error) {
                 console.error(error);
-                showError(error.message || "데이터 처리 중 예상치 못한 오류가 발생했습니다. 파일 형식을 다시 확인해주세요.");
+                showError(error.message || "알 수 없는 오류가 발생했습니다.");
             }
         }
     </script>
