@@ -49,7 +49,29 @@
                     <!-- 항목이 동적 렌더링 됨 -->
                 </div>
 
-                <div class="mt-8 flex justify-center border-t pt-6 border-gray-200">
+                <div class="mt-6 pt-4 border-t border-gray-200 flex flex-wrap items-center gap-x-6 gap-y-3">
+                    <span class="text-sm font-bold text-gray-700"><i class="fas fa-layer-group text-indigo-500 mr-1"></i> 등급 체계:</span>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="radio" name="gradeSystem" value="9" checked class="accent-indigo-600 w-4 h-4">
+                        <span class="text-sm font-semibold text-gray-700">9등급 <span class="text-xs text-gray-400">(상대평가)</span></span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="radio" name="gradeSystem" value="5" class="accent-indigo-600 w-4 h-4">
+                        <span class="text-sm font-semibold text-gray-700">5등급 <span class="text-xs text-gray-400">(성취평가)</span></span>
+                    </label>
+
+                    <span class="text-sm font-bold text-gray-700 pl-4 border-l border-gray-300"><i class="fas fa-calendar-alt text-green-500 mr-1"></i> 산출 유형:</span>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="radio" name="calcType" value="exam" checked class="accent-green-600 w-4 h-4">
+                        <span class="text-sm font-semibold text-gray-700">고사별 등급산출 <span class="text-xs text-gray-400">(결석자 인원 제외)</span></span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="radio" name="calcType" value="semester" class="accent-green-600 w-4 h-4">
+                        <span class="text-sm font-semibold text-gray-700">학기말 산출 <span class="text-xs text-gray-400">(결석자 인원 포함)</span></span>
+                    </label>
+                </div>
+
+                <div class="mt-6 flex justify-center border-t pt-6 border-gray-200">
                     <button onclick="executeAllInOne()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-12 rounded-full shadow-lg transition transform hover:-translate-y-1 text-lg flex items-center">
                         <i class="fas fa-rocket mr-2"></i> 성적 합산 및 등급 컷 계산
                     </button>
@@ -59,7 +81,8 @@
             <!-- 결과 대시보드 -->
             <div id="resultsArea" class="hidden fade-in space-y-8">
                 <!-- 요약 카드 -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- 산출 대상 인원 -->
                     <div class="bg-white border border-blue-100 rounded-xl shadow-md p-6 flex items-center justify-between relative overflow-hidden">
                         <div class="absolute right-0 top-0 w-24 h-24 bg-blue-50 rounded-bl-full z-0"></div>
                         <div class="relative z-10">
@@ -68,12 +91,26 @@
                         </div>
                         <i class="fas fa-users text-5xl text-blue-200 relative z-10"></i>
                     </div>
-                    
+
+                    <!-- 결석자 (미인정결/인정결/병결) -->
+                    <div class="bg-white border border-amber-100 rounded-xl shadow-md p-6 relative overflow-hidden">
+                        <div class="absolute right-0 top-0 w-24 h-24 bg-amber-50 rounded-bl-full z-0"></div>
+                        <div class="relative z-10 flex justify-between items-start w-full">
+                            <div class="w-full">
+                                <p class="text-sm text-gray-500 font-bold mb-1" id="absentCardLabel">결석자 (미인정결/인정결/병결)</p>
+                                <p class="text-4xl font-black text-amber-500" id="absentCount">- 명</p>
+                                <div id="absentNamesList" class="mt-2 text-sm text-amber-700 font-medium bg-amber-50 p-2 rounded-lg border border-amber-100 max-h-24 overflow-y-auto w-full break-words hidden"></div>
+                            </div>
+                            <i class="fas fa-user-clock text-4xl text-amber-200"></i>
+                        </div>
+                    </div>
+
+                    <!-- 학적변동 완전 제외 -->
                     <div class="bg-white border border-red-100 rounded-xl shadow-md p-6 relative overflow-hidden">
                         <div class="absolute right-0 top-0 w-24 h-24 bg-red-50 rounded-bl-full z-0"></div>
                         <div class="relative z-10 flex justify-between items-start w-full">
                             <div class="w-full">
-                                <p class="text-sm text-gray-500 font-bold mb-1">자동 제외 대상자 (자퇴/결시 등)</p>
+                                <p class="text-sm text-gray-500 font-bold mb-1">학적변동 완전 제외 (자퇴/전출 등)</p>
                                 <p class="text-4xl font-black text-red-500" id="dropCount">- 명</p>
                                 <div id="dropNames" class="mt-2 text-sm text-red-600 font-medium bg-red-50 p-2 rounded-lg border border-red-100 inline-block max-h-24 overflow-y-auto w-full break-words"></div>
                             </div>
@@ -83,10 +120,10 @@
                 </div>
 
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    <!-- 9등급 커트라인 -->
+                    <!-- 등급 커트라인 -->
                     <div class="lg:col-span-1 bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden flex flex-col">
                         <div class="bg-indigo-50 px-6 py-4 border-b border-gray-200">
-                            <h3 class="text-lg font-bold text-indigo-900"><i class="fas fa-trophy mr-2 text-indigo-600"></i>9등급 커트라인</h3>
+                            <h3 class="text-lg font-bold text-indigo-900"><i class="fas fa-trophy mr-2 text-indigo-600"></i><span id="gradeCutTitle">9등급</span> 커트라인</h3>
                         </div>
                         <div class="overflow-x-auto flex-grow">
                             <table class="min-w-full divide-y divide-gray-200 text-center h-full">
@@ -110,20 +147,8 @@
                         </div>
                         <div class="overflow-x-auto p-4 flex-grow flex items-center">
                             <table class="min-w-full divide-y divide-gray-300 text-center border">
-                                <thead class="bg-gray-100">
-                                    <tr>
-                                        <th class="px-3 py-3 font-bold text-gray-700 border-r">반 \ 등급</th>
-                                        <th class="px-2 py-3 text-sm font-bold text-gray-600">1</th>
-                                        <th class="px-2 py-3 text-sm font-bold text-gray-600">2</th>
-                                        <th class="px-2 py-3 text-sm font-bold text-gray-600">3</th>
-                                        <th class="px-2 py-3 text-sm font-bold text-gray-600 bg-blue-50">4</th>
-                                        <th class="px-2 py-3 text-sm font-bold text-gray-600 bg-blue-50">5</th>
-                                        <th class="px-2 py-3 text-sm font-bold text-gray-600 bg-blue-50">6</th>
-                                        <th class="px-2 py-3 text-sm font-bold text-gray-600">7</th>
-                                        <th class="px-2 py-3 text-sm font-bold text-gray-600">8</th>
-                                        <th class="px-2 py-3 text-sm font-bold text-gray-600">9</th>
-                                        <th class="px-3 py-3 text-sm font-black text-gray-800 border-l bg-gray-200">계</th>
-                                    </tr>
+                                <thead id="distTableHeader" class="bg-gray-100">
+                                    <!-- JS로 동적 렌더링 됨 -->
                                 </thead>
                                 <tbody id="distTableBody" class="bg-white divide-y divide-gray-200">
                                 </tbody>
@@ -155,9 +180,23 @@
     </div>
 
     <script>
-        // 학적 변동 및 결시 제외 키워드
+        // 학적 변동 → 항상 인원에서 완전 제외
         const DROP_KEYWORDS = ['자퇴', '전출', '제적', '유예', '면제', '위탁'];
+        // 결석 사유 → 고사별: 인원 제외 / 학기말: 인원 포함(해당 항목 0점 처리)
+        const ABSENT_KEYWORDS = ['미인정결', '인정결', '병결', '결석'];
         let rowCount = 0;
+
+        // 등급 체계 정의
+        const GRADE_SYSTEMS = {
+            9: {
+                ratios: [0.04, 0.11, 0.23, 0.40, 0.60, 0.77, 0.89, 0.96, 1.00],
+                midGrades: [4, 5, 6]   // 분포표에서 bg-blue-50 강조할 등급
+            },
+            5: {
+                ratios: [0.10, 0.34, 0.66, 0.90, 1.00],
+                midGrades: [3]
+            }
+        };
 
         function showError(msg) {
             const errDiv = document.getElementById('errorMessage');
@@ -263,18 +302,29 @@
 
                 if (!isDataRow) {
                     let isHeader = false;
-                    if (cleanFirst === '반번호' || cleanFirst === '반' || cleanFirst === '번호' || cleanFirst === '학번' || (cleanFirst.includes('반') && cleanFirst.includes('번호'))) {
+                    // 키워드 기반 헤더 감지: 나이스에서 사용하는 다양한 첫 열 표현 지원
+                    const HEADER_KEYWORDS = ['반번호', '반', '번호', '학번', '이름', '성명', '학생', '번', '성명번호', '학생번호'];
+                    if (HEADER_KEYWORDS.some(kw => cleanFirst === kw) ||
+                        (cleanFirst.includes('반') && cleanFirst.includes('번호'))) {
                         isHeader = true;
                     } else {
-                        let consecutiveNumbers = 0;
-                        let expected = 1;
-                        for (let c = 1; c <= Math.min(cols.length - 1, 10); c++) {
-                            if (cols[c] && cols[c].replace(/[^0-9]/g, '') === String(expected)) {
-                                consecutiveNumbers++;
-                                expected++;
+                        // 숫자 패턴 기반 헤더 감지: 1부터가 아닌 임의 시작값에서도 연속 3개 이상이면 헤더로 판단
+                        let colNums = [];
+                        for (let c = 1; c <= Math.min(cols.length - 1, 15); c++) {
+                            let n = parseInt((cols[c] || '').replace(/[^0-9]/g, ''));
+                            if (!isNaN(n) && n > 0) colNums.push(n);
+                        }
+                        let maxConsecutive = colNums.length > 0 ? 1 : 0;
+                        let consecutive = 1;
+                        for (let i = 1; i < colNums.length; i++) {
+                            if (colNums[i] === colNums[i - 1] + 1) {
+                                consecutive++;
+                                if (consecutive > maxConsecutive) maxConsecutive = consecutive;
+                            } else {
+                                consecutive = 1;
                             }
                         }
-                        if (consecutiveNumbers >= 3) isHeader = true;
+                        if (maxConsecutive >= 3) isHeader = true;
                     }
 
                     if (isHeader) {
@@ -319,6 +369,12 @@
             document.getElementById('resultsArea').classList.add('hidden');
 
             try {
+                // 선택된 등급 체계 및 산출 유형 읽기
+                const gradeSystemVal = parseInt(document.querySelector('input[name="gradeSystem"]:checked').value);
+                const { ratios, midGrades } = GRADE_SYSTEMS[gradeSystemVal];
+                const gradeCount = ratios.length;
+                const calcType = document.querySelector('input[name="calcType"]:checked').value; // 'exam' | 'semester'
+
                 const rows = document.querySelectorAll('.eval-row');
                 if (rows.length === 0) return showError("평가 항목을 최소 1개 이상 추가해주세요.");
 
@@ -364,14 +420,16 @@
                             let rawVal = db[cNum][sNum];
 
                             if (!masterDB[key]) {
-                                masterDB[key] = { 
-                                    classNum: parseInt(cNum), 
-                                    stuNum: parseInt(sNum), 
-                                    totalScore: 0, 
+                                masterDB[key] = {
+                                    classNum: parseInt(cNum),
+                                    stuNum: parseInt(sNum),
+                                    totalScore: 0,
                                     scores: {},
                                     weightedScores: {},
-                                    isDrop: false, 
-                                    allEmpty: true 
+                                    isDrop: false,
+                                    isAbsent: false,
+                                    absentReason: '',
+                                    allEmpty: true
                                 };
                             }
 
@@ -380,6 +438,9 @@
 
                             if (DROP_KEYWORDS.some(kw => rawVal.includes(kw))) {
                                 masterDB[key].isDrop = true;
+                            } else if (!masterDB[key].isAbsent && ABSENT_KEYWORDS.some(kw => rawVal.includes(kw))) {
+                                masterDB[key].isAbsent = true;
+                                masterDB[key].absentReason = rawVal;
                             }
 
                             let score = parseFloat(rawVal);
@@ -398,12 +459,14 @@
 
                 let validStudents = [];
                 let dropNames = [];
+                let absentNames = []; // 결석자 (고사별: 인원 제외 / 학기말: 인원 포함)
 
                 for (let key in masterDB) {
                     let stu = masterDB[key];
-                    if (stu.allEmpty) continue; 
-                    
+                    if (stu.allEmpty) continue;
+
                     if (stu.isDrop) {
+                        // 자퇴/전출 등: 항상 완전 제외
                         let reason = "";
                         for (let evalName in stu.scores) {
                             if (DROP_KEYWORDS.some(kw => stu.scores[evalName].includes(kw))) {
@@ -412,10 +475,19 @@
                         }
                         dropNames.push(`${stu.classNum}반 ${stu.stuNum}번(${reason})`);
                     } else {
-                        // 핵심 수정 2: 가장 강력하고 완벽한 자바스크립트 반올림 기법인 Exponential(지수) 반올림 적용
-                        // 이렇게 하면 87.985가 절대 87.98로 버림되지 않고 완벽하게 87.99로 반올림됩니다.
-                        stu.totalScore = Number(Math.round(stu.totalScore + "e+2") + "e-2");
-                        validStudents.push(stu);
+                        // 지수 표기법 변환으로 부동소수점 곱셈 오차 없이 소수점 2자리 반올림
+                        stu.totalScore = +(Math.round(+(stu.totalScore + 'e+2')) + 'e-2');
+
+                        if (stu.isAbsent) {
+                            absentNames.push(`${stu.classNum}반 ${stu.stuNum}번(${stu.absentReason})`);
+                            if (calcType === 'semester') {
+                                // 학기말: 인원에 포함 (해당 항목 0점으로 합산됨)
+                                validStudents.push(stu);
+                            }
+                            // 고사별: 인원에서 제외 (validStudents에 넣지 않음)
+                        } else {
+                            validStudents.push(stu);
+                        }
                     }
                 }
 
@@ -430,9 +502,23 @@
                 
                 let validScoresOnly = validStudents.map(s => s.totalScore);
 
+                document.getElementById('gradeCutTitle').innerText = `${gradeCount}등급`;
                 document.getElementById('totalCount').innerHTML = `${totalCount} <span class="text-2xl font-bold">명</span>`;
+
+                // 결석자 카드
+                const absentLabel = calcType === 'exam' ? '결석자 — 인원 제외 (고사별)' : '결석자 — 인원 포함 (학기말)';
+                document.getElementById('absentCardLabel').innerText = absentLabel;
+                document.getElementById('absentCount').innerText = `${absentNames.length} 명`;
+                const absentNamesEl = document.getElementById('absentNamesList');
+                if (absentNames.length > 0) {
+                    absentNamesEl.innerText = absentNames.join(', ');
+                    absentNamesEl.classList.remove('hidden');
+                } else {
+                    absentNamesEl.classList.add('hidden');
+                }
+
+                // 학적변동 카드
                 document.getElementById('dropCount').innerText = `${dropNames.length} 명`;
-                
                 let dropNamesEl = document.getElementById('dropNames');
                 if (dropNames.length > 0) {
                     dropNamesEl.innerText = `제외자 목록: ${dropNames.join(', ')}`;
@@ -441,72 +527,93 @@
                     dropNamesEl.style.display = 'none';
                 }
 
-                const ratios = [0.04, 0.11, 0.23, 0.40, 0.60, 0.77, 0.89, 0.96, 1.00];
-                let gradeCuts = []; 
-                let tbodyCuts = document.getElementById('gradeTableBody');
-                tbodyCuts.innerHTML = '';
+                let gradeCuts = [];
 
+                // 1단계: 각 등급의 커트라인 점수만 계산 (테이블은 아직 렌더링 안 함)
+                // Math.ceil 사용: 소수 인원(예: 2명)에서 targetCount가 0이 되는 문제 방지
                 ratios.forEach((ratio, idx) => {
                     let grade = idx + 1;
-                    let targetCount = Math.round(totalCount * ratio);
+                    let targetCount = Math.ceil(totalCount * ratio);
                     let cutIdx = Math.min(targetCount - 1, totalCount - 1);
-                    if (cutIdx < 0) cutIdx = 0;
-                    
                     let cutScore = validScoresOnly[cutIdx];
                     gradeCuts.push({ grade: grade, cutScore: cutScore });
-
-                    let displayRatio = (ratio * 100).toFixed(0);
-                    
-                    let tr = document.createElement('tr');
-                    tr.className = grade % 2 === 0 ? "bg-gray-50 hover:bg-indigo-50" : "bg-white hover:bg-indigo-50";
-                    tr.innerHTML = `
-                        <td class="px-4 py-3 font-black text-gray-800"><span class="bg-indigo-100 text-indigo-800 w-6 h-6 inline-flex items-center justify-center rounded-full text-xs">${grade}</span></td>
-                        <td class="px-4 py-3 text-gray-600 text-sm">${targetCount}명 <span class="text-xs text-gray-400">(${displayRatio}%)</span></td>
-                        <td class="px-4 py-3 font-black text-lg text-indigo-600">${cutScore.toFixed(2)} 점</td>
-                    `;
-                    tbodyCuts.appendChild(tr);
                 });
 
+                // 2단계: 학생별 등급 배정 (>= 조건으로 동점자는 유리한 등급 자동 부여)
                 let classDist = {};
-                
+
                 validStudents.forEach((stu, index) => {
-                    stu.rank = index + 1; 
-                    let studentGrade = 9;
+                    stu.rank = index + 1;
+                    let studentGrade = gradeCount;
                     for (let i = 0; i < gradeCuts.length; i++) {
                         if (stu.totalScore >= gradeCuts[i].cutScore) {
                             studentGrade = gradeCuts[i].grade;
                             break;
                         }
                     }
-                    stu.grade = studentGrade; 
+                    stu.grade = studentGrade;
 
                     if (!classDist[stu.classNum]) {
-                        classDist[stu.classNum] = Array(9).fill(0);
+                        classDist[stu.classNum] = Array(gradeCount).fill(0);
                     }
                     classDist[stu.classNum][studentGrade - 1]++;
                 });
 
+                // 3단계: 실제 배정 결과로 누적 인원 계산 후 커트라인 테이블 렌더링
+                let actualGradeCounts = Array(gradeCount).fill(0);
+                validStudents.forEach(stu => actualGradeCounts[stu.grade - 1]++);
+
+                let tbodyCuts = document.getElementById('gradeTableBody');
+                tbodyCuts.innerHTML = '';
+                let cumulativeActual = 0;
+
+                gradeCuts.forEach(({ grade, cutScore }) => {
+                    cumulativeActual += actualGradeCounts[grade - 1];
+                    let actualRatio = (cumulativeActual / totalCount * 100).toFixed(1);
+
+                    let tr = document.createElement('tr');
+                    tr.className = grade % 2 === 0 ? "bg-gray-50 hover:bg-indigo-50" : "bg-white hover:bg-indigo-50";
+                    tr.innerHTML = `
+                        <td class="px-4 py-3 font-black text-gray-800"><span class="bg-indigo-100 text-indigo-800 w-6 h-6 inline-flex items-center justify-center rounded-full text-xs">${grade}</span></td>
+                        <td class="px-4 py-3 text-gray-600 text-sm">${cumulativeActual}명 <span class="text-xs text-gray-400">(${actualRatio}%)</span></td>
+                        <td class="px-4 py-3 font-black text-lg text-indigo-600">${cutScore.toFixed(2)} 점</td>
+                    `;
+                    tbodyCuts.appendChild(tr);
+                });
+
+                // 4단계: 분포표 헤더 동적 렌더링
+                const distThead = document.getElementById('distTableHeader');
+                let distHeadHtml = '<tr><th class="px-3 py-3 font-bold text-gray-700 border-r">반 \\ 등급</th>';
+                for (let g = 1; g <= gradeCount; g++) {
+                    const isMid = midGrades.includes(g);
+                    distHeadHtml += `<th class="px-2 py-3 text-sm font-bold text-gray-600${isMid ? ' bg-blue-50' : ''}">${g}</th>`;
+                }
+                distHeadHtml += '<th class="px-3 py-3 text-sm font-black text-gray-800 border-l bg-gray-200">계</th></tr>';
+                distThead.innerHTML = distHeadHtml;
+
+                // 5단계: 분포표 바디 렌더링
                 let classKeys = Object.keys(classDist).map(Number).sort((a, b) => a - b);
                 let tbodyDist = document.getElementById('distTableBody');
                 tbodyDist.innerHTML = '';
-                let totalDistSum = Array(9).fill(0);
+                let totalDistSum = Array(gradeCount).fill(0);
 
                 classKeys.forEach(cNum => {
                     let dist = classDist[cNum];
                     let classTotal = 0;
-                    
+
                     let tr = document.createElement('tr');
                     tr.className = "hover:bg-green-50 transition";
                     let tdHtml = `<td class="px-3 py-3 font-bold text-gray-700 border-r bg-gray-50">${cNum}반</td>`;
-                    
+
                     dist.forEach((count, idx) => {
                         classTotal += count;
                         totalDistSum[idx] += count;
-                        let bgClass = (idx >= 3 && idx <= 5) ? "bg-blue-50/50" : "";
+                        const isMid = midGrades.includes(idx + 1);
+                        let bgClass = isMid ? "bg-blue-50/50" : "";
                         let textClass = count > 0 ? "text-gray-800 font-semibold" : "text-gray-300";
                         tdHtml += `<td class="px-2 py-3 ${bgClass} ${textClass}">${count > 0 ? count : '-'}</td>`;
                     });
-                    
+
                     tdHtml += `<td class="px-3 py-3 font-black text-gray-800 border-l bg-gray-100">${classTotal}</td>`;
                     tr.innerHTML = tdHtml;
                     tbodyDist.appendChild(tr);
@@ -515,7 +622,7 @@
                 let footTr = document.createElement('tr');
                 footTr.className = "bg-gray-200 border-t-2 border-gray-400";
                 let footHtml = `<td class="px-3 py-3 font-black text-gray-800 border-r">전체 누계</td>`;
-                
+
                 let grandTotal = 0;
                 totalDistSum.forEach((count, idx) => {
                     grandTotal += count;
@@ -579,11 +686,45 @@
                 document.getElementById('resultsArea').classList.remove('hidden');
                 document.getElementById('resultsArea').scrollIntoView({ behavior: 'smooth', block: 'start' });
 
+                // 결석자가 있으면 경고 팝업 표시
+                if (absentNames.length > 0) {
+                    const modeText = calcType === 'exam'
+                        ? '고사별 등급산출 모드로 해당 학생은 인원에서 제외됩니다. '
+                        : '학기말 산출 모드로 해당 학생은 인원에 포함됩니다. ';
+                    document.getElementById('absentWarningMode').innerText = modeText;
+                    document.getElementById('absentWarningList').innerText = absentNames.join(' / ');
+                    document.getElementById('absentWarningModal').classList.remove('hidden');
+                }
+
             } catch (error) {
                 console.error(error);
                 showError(error.message || "알 수 없는 오류가 발생했습니다.");
             }
         }
     </script>
+
+    <!-- 결석자 경고 모달 -->
+    <div id="absentWarningModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl p-6 max-w-lg w-full fade-in">
+            <div class="flex items-start gap-4">
+                <div class="flex-shrink-0 bg-amber-100 rounded-full p-2">
+                    <i class="fas fa-triangle-exclamation text-amber-500 text-xl"></i>
+                </div>
+                <div class="flex-1">
+                    <h3 class="text-lg font-bold text-gray-800 mb-1">등급컷 주의 안내</h3>
+                    <p class="text-sm text-gray-600 mb-3">
+                        아래 학생들에게 <strong class="text-amber-600">미인정결 · 인정결 · 병결</strong> 처리가 있습니다.<br>
+                        <span id="absentWarningMode" class="font-semibold text-green-700"></span>
+                        실제 등급컷과 차이가 날 수 있으니 확인하세요.
+                    </p>
+                    <div id="absentWarningList" class="text-sm text-amber-800 bg-amber-50 p-3 rounded-lg border border-amber-200 max-h-36 overflow-y-auto mb-4 break-words"></div>
+                    <button onclick="document.getElementById('absentWarningModal').classList.add('hidden')"
+                            class="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-2 px-4 rounded-lg transition">
+                        확인했습니다
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
