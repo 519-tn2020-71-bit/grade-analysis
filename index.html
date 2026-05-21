@@ -530,11 +530,11 @@
                 let gradeCuts = [];
 
                 // 1단계: 각 등급의 커트라인 점수만 계산 (테이블은 아직 렌더링 안 함)
-                // Math.ceil 사용: 소수 인원(예: 2명)에서 targetCount가 0이 되는 문제 방지
+                // Math.round 사용 (표준). targetCount가 0이 되는 극소수 엣지케이스는 Math.max로 보정
                 ratios.forEach((ratio, idx) => {
                     let grade = idx + 1;
-                    let targetCount = Math.ceil(totalCount * ratio);
-                    let cutIdx = Math.min(targetCount - 1, totalCount - 1);
+                    let targetCount = Math.round(totalCount * ratio);
+                    let cutIdx = Math.min(Math.max(targetCount - 1, 0), totalCount - 1);
                     let cutScore = validScoresOnly[cutIdx];
                     gradeCuts.push({ grade: grade, cutScore: cutScore });
                 });
